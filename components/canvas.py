@@ -11,6 +11,7 @@ from components.shapes.eyebrow import Eyebrow
 from components.shapes.half_circle import HalfCircle
 from components.shapes.octagon import Octagon
 from components.shapes.quarter_circle import QuarterCircle
+from components.shapes.shape_label import ShapeLabel
 from components.shapes.tombstone import Tombstone
 from components.shapes.trapezoid import Trapezoid
 from components.shapes.triangle import Triangle
@@ -29,6 +30,10 @@ class Canvas:
         self.__surface = None
 
     def draw(self):
+        # set font size for shape label as 15 if image format is png
+        if self.image_format == 'png':
+            ShapeLabel.TEXT_SIZE = 15
+
         self.context = self.__create_context()
         shape = self.raw_params.get('shape', None)
         if not shape:
@@ -89,6 +94,11 @@ class Canvas:
                                            direction=self.direction)
             quarter_circle.set_context(self.context)
             quarter_circle.draw_shape()
+
+        if self.image_format == 'png':
+            self.filename = f"/tmp/{''.join(random.choice(string.ascii_uppercase) for _ in range(20))}.png"
+            self.__surface.write_to_png(self.filename)
+
         self.__close()
 
     # calculate total width with no scale factor
@@ -118,6 +128,10 @@ class Canvas:
     @cached_property
     def direction(self):
         return self.raw_params.get('direction', "left")
+
+    @cached_property
+    def image_format(self):
+        return self.raw_params.get('image_format', "svg")
 
     @cached_property
     def panel_type(self):

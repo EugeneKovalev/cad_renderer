@@ -61,6 +61,10 @@ class Arch:
         return self._size_labels
 
     @property
+    def original_width(self):
+        return self.original_width
+
+    @property
     def context(self) -> cairo.Context:
         if not self._context:
             raise NotImplementedError
@@ -85,7 +89,7 @@ class Arch:
         y_change = radius - self.scaled_height
         x_change = self.scaled_width / 2
 
-        self.draw_line((center_x - x_change, center_y + y_change), (center_x + x_change, center_y + y_change), 2)
+        self.draw_line((center_x - x_change, center_y + y_change), (center_x + x_change, center_y + y_change), thickness)
 
         self.context.stroke()
         self.context.restore()
@@ -149,7 +153,6 @@ class Arch:
             sun_width = self.scaled_width / 2
 
             sun_radius = (sun_width ** 2 / (8 * sun_height)) + sun_height / 2
-            center_x = self.x + (self.scaled_width + x_offset) / 2
             center_y = self.y - (sun_radius - sun_height)
 
             # Calculate the central angle of the chord
@@ -170,7 +173,6 @@ class Arch:
             sun_width = self.scaled_width / 2
             sun_radius = (sun_width ** 2 / (8 * sun_height)) + sun_height / 2
 
-            sun_center_x = self.x + (self.scaled_width + x_offset) / 2
             sun_center_y = self.y - (sun_radius - sun_height) + y_offset
 
             # Calculate the central angle of the chord
@@ -178,7 +180,7 @@ class Arch:
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)
-            self.draw_arch(sun_center_x, sun_center_y, radius=sun_radius,
+            self.draw_arch(center_x, sun_center_y, radius=sun_radius,
                            thickness=1, start_angle=start_angle)
 
             # draw lines
@@ -190,7 +192,7 @@ class Arch:
                 x1, y1 = touchpoint_panel
                 x2, y2 = touchpoint_sun
                 self.draw_line((center_x - x1, center_y + y1 + y_offset),
-                               (sun_center_x - x2, center_y + y2 + y_offset))
+                               (center_x - x2, center_y + y2 + y_offset))
 
         elif pattern_name == 'colonial-3x1':
             vertical_muntin_spacing = self.scaled_width / 3
@@ -277,8 +279,16 @@ class Arch:
             self._size_labels.append(height_label)
 
         for panel in self.raw_params['panels']:
+            center_x = self.x + self.scaled_width / 2
             x_offset = (self.scaled_width - panel['width'] * self.scale_factor)
             y_offset = (self.scaled_height - panel['height'] * self.scale_factor) / 2
+
+            ## to avoid the panel having insufficient width, adjust the panel width based on the panel height.
+            # original_width is used for labeling panel width
+            panel['original_width'] = panel['width']
+            sagitta = self.scaled_height - y_offset
+            offset_chord = 2 * math.sqrt((2 * radius * sagitta) - (sagitta ** 2))
+            panel['width'] = (offset_chord - y_offset*2) / self.scale_factor
 
             child_panel = Arch(x=self.x + x_offset, y=self.y + y_offset,
                                      raw_params=panel, scale_factor=self.scale_factor,
@@ -292,7 +302,6 @@ class Arch:
             self.name = panel['name'] if panel['panel_type'] == 'panel' else 'frame'
 
             radius = self.scaled_width ** 2 / (8 * self.scaled_height) + self.scaled_height / 2
-            center_x = self.x + (self.scaled_width + x_offset) / 2
             center_y = self.y - (radius - self.scaled_height - y_offset)
 
             # Calculate the central angle of the chord
@@ -312,7 +321,7 @@ class Arch:
             if pattern_name:
                 self.draw_muntin(pattern_name, radius, (center_x, self.y), y_offset, x_offset)
 
-            self.x = self.x + x_offset / 2
+            self.x = self.x + y_offset
             self.y = self.y + y_offset
 
             if self.draw_label:

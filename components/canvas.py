@@ -1,15 +1,20 @@
-import cairo
 import random
 import string
 from functools import cached_property
 from typing import Dict
 
-from components.panel import Panel
+import cairo
+
+from components.shapes.arch import Arch
 from components.shapes.circle import Circle
 from components.shapes.eyebrow import Eyebrow
-from components.shapes.arch import Arch
 from components.shapes.half_circle import HalfCircle
 from components.shapes.octagon import Octagon
+from components.shapes.quarter_circle import QuarterCircle
+from components.shapes.shape_label import ShapeLabel
+from components.shapes.tombstone import Tombstone
+from components.shapes.trapezoid import Trapezoid
+from components.shapes.triangle import Triangle
 from enums.colors import Colors
 
 
@@ -25,6 +30,10 @@ class Canvas:
         self.__surface = None
 
     def draw(self):
+        # set font size for shape label as 15 if image format is png
+        if self.image_format == 'png':
+            ShapeLabel.TEXT_SIZE = 15
+
         self.context = self.__create_context()
         shape = self.raw_params.get('shape', None)
         if not shape:
@@ -48,17 +57,48 @@ class Canvas:
             c.draw_shape()
         elif shape == 'eyebrow':
             e = Eyebrow(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width, y=self.BORDER_BOTTOM_OFFSET,
-                            raw_params=self.raw_params, scale_factor=self.scale_factor,
-                            draw_label=self.draw_label)
+                        raw_params=self.raw_params, scale_factor=self.scale_factor,
+                        draw_label=self.draw_label)
             e.set_context(self.context)
             e.draw_shape()
-        elif shape == 'arch':
+        elif shape == 'arc':
             a = Arch(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width, y=self.BORDER_BOTTOM_OFFSET,
-                            raw_params=self.raw_params, scale_factor=self.scale_factor,
-                            draw_label=self.draw_label)
+                     raw_params=self.raw_params, scale_factor=self.scale_factor,
+                     draw_label=self.draw_label)
             a.set_context(self.context)
             a.draw_shape()
-            
+        elif shape == 'tombstone':
+            t = Tombstone(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width, y=self.BORDER_BOTTOM_OFFSET,
+                          raw_params=self.raw_params, scale_factor=self.scale_factor,
+                          draw_label=self.draw_label)
+            t.set_context(self.context)
+            t.draw_shape()
+        elif shape == 'triangle':
+            triangle = Triangle(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width,
+                                y=self.BORDER_BOTTOM_OFFSET, raw_params=self.raw_params, scale_factor=self.scale_factor,
+                                draw_label=self.draw_label, direction=self.direction)
+            triangle.set_context(self.context)
+            triangle.draw_shape()
+
+        elif shape == 'trapezoid':
+            trapezoid = Trapezoid(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width,
+                                  y=self.BORDER_BOTTOM_OFFSET, raw_params=self.raw_params,
+                                  scale_factor=self.scale_factor, draw_label=self.draw_label, direction=self.direction)
+            trapezoid.set_context(self.context)
+            trapezoid.draw_shape()
+
+        elif shape == 'quartercircle':
+            quarter_circle = QuarterCircle(x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width,
+                                           y=self.BORDER_BOTTOM_OFFSET, raw_params=self.raw_params,
+                                           scale_factor=self.scale_factor, draw_label=self.draw_label,
+                                           direction=self.direction)
+            quarter_circle.set_context(self.context)
+            quarter_circle.draw_shape()
+
+        if self.image_format == 'png':
+            self.filename = f"/tmp/{''.join(random.choice(string.ascii_uppercase) for _ in range(20))}.png"
+            self.__surface.write_to_png(self.filename)
+
         self.__close()
 
     # calculate total width with no scale factor
@@ -86,6 +126,14 @@ class Canvas:
         return self.raw_params.get('is_transparent', False)
 
     @cached_property
+    def direction(self):
+        return self.raw_params.get('direction', "left")
+
+    @cached_property
+    def image_format(self):
+        return self.raw_params.get('image_format', "svg")
+
+    @cached_property
     def panel_type(self):
         return self.raw_params['panel_type']
 
@@ -104,6 +152,10 @@ class Canvas:
     @cached_property
     def frame_height(self):
         return self.raw_params['height']
+
+    @cached_property
+    def frame_height_2(self):
+        return self.raw_params.get('height_2', 0)
 
     @cached_property
     def left_positioned_labels_width(self):
@@ -162,7 +214,7 @@ class Canvas:
 
     @cached_property
     def scaled_frame_height(self):
-        return self.frame_height * self.scale_factor
+        return max(self.frame_height, self.frame_height_2) * self.scale_factor
 
     @cached_property
     def scaled_framed_width_with_labels(self):

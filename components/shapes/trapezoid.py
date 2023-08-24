@@ -1,12 +1,13 @@
 import math
+
 import cairo
 
 from components.shapes.shape_label import ShapeLabel
 from enums.colors import Colors
 
 
-class Octagon:
-    def __init__(self, x=0, y=0, raw_params=None, scale_factor=1, draw_label=True):
+class Trapezoid:
+    def __init__(self, x=0, y=0, raw_params=None, scale_factor=1, draw_label=True, direction='left'):
         self._context = None
         self.parent_panel = None
         self.draw_label = draw_label
@@ -19,9 +20,9 @@ class Octagon:
         self.name = raw_params['name'] if raw_params['panel_type'] == 'panel' else 'frame'
 
         self.scale_factor = scale_factor
+        self.direction = direction
         self._size_labels = []
         self.child_labels = []
-        self.vertices = [] 
 
     @property
     def width(self):
@@ -40,12 +41,20 @@ class Octagon:
         return self.raw_params['dlo_height']
 
     @property
+    def height_2(self):
+        return self.raw_params['height_2']
+
+    @property
     def scaled_width(self):
         return self.width * self.scale_factor
 
     @property
     def scaled_height(self):
         return self.height * self.scale_factor
+
+    @property
+    def scaled_height_2(self):
+        return self.height_2 * self.scale_factor
 
     @property
     def scaled_dlo_width(self):
@@ -73,62 +82,87 @@ class Octagon:
         self._context = context
         return self
 
-    def draw_octagon(self, center_x, center_y, side_length, thickness=1):
+    def draw_trapezoid(self, x, y, width, height, height_2, thickness=1):
+        """
+        Draws a trapezoid with the specified coordinates, width, height, and height_2.
+
+        Args:
+            x (int): The x-coordinate of the bottom-left corner of the trapezoid.
+            y (int): The y-coordinate of the bottom-left corner of the trapezoid.
+            width (int): The width of the trapezoid.
+            height (int): The height of the trapezoid.
+            height_2 (int): The height of the second parallel side of the trapezoid.
+            thickness (int, optional): The thickness of the lines. Defaults to 1.
+        """
+
         self.context.new_sub_path()
         self.context.save()
         self.context.set_source_rgba(*Colors.BLACK)
         self.context.set_line_width(thickness)
 
-        angle = 2 * math.pi / 8  # Angle between adjacent sides of the octagon
+        # draw trapezoid's lines
+        self.context.move_to(x, y)
+        self.context.line_to(x + width, y)
 
-        # Calculate the coordinates of the octagon vertices
-        self.vertices = []
-        for i in range(8):
-            x = center_x + side_length * math.cos(i * angle + math.pi / 8)
-            y = center_y + side_length * math.sin(i * angle + math.pi / 8)
-            self.vertices.append((x, y))
+        if self.direction == 'left':
+            self.context.line_to(x + width, y + height)
+            self.context.line_to(x, y + height_2)
+        else:
+            self.context.line_to(x + width, y + height_2)
+            self.context.line_to(x, y + height)
 
-        # Move to the first vertex
-        self.context.move_to(*self.vertices[0])
-
-        # Draw lines to connect the vertices
-        for i in range(1, 8):
-            self.context.line_to(*self.vertices[i])
-
-        # Close the path
-        self.context.close_path()
+        self.context.line_to(x, y)
 
         self.context.stroke()
         self.context.restore()
 
+    def modify_heights(self):
+        # in trapezoid, height 1 should always be greater than height 2
+        larger_height = max(self.height, self.height_2)
+        smaller_height = min(self.height, self.height_2)
+
+        self.raw_params['height'] = larger_height
+        self.raw_params['height_2'] = smaller_height
+
     def draw_shape(self):
-        # Draw frame
-        outer_side_length =  self.scaled_width / 2
-        self.draw_octagon(center_x=self.x + self.scaled_width / 2, center_y=self.y + self.scaled_height / 2,
-                          side_length=outer_side_length, thickness=2)
+        # if height 2 is zero, return false
+        if not self.height_2:
+            return False
+
+        # in trapezoid, height 1 should always be greater than height 2
+        if self.height > self.height_2:
+            self.modify_heights()
+
+        #  find the base angles created by the sides in top triangular part
+        # 0.001 is added to handle division by zero error
+        bottom_angle = math.atan((self.scaled_height - self.scaled_height_2) / self.scaled_width + 0.001)
+
+        # draw frame
+        self.draw_trapezoid(x=self.x, y=self.y, width=self.scaled_width, height=self.scaled_height,
+                            height_2=self.scaled_height_2, thickness=2)
 
         if self.draw_label:
             width_label_cords = {
-                "x1": self.vertices[3][0],
+                "x1": self.x,
                 "y1": self.y + self.scaled_height,
-                "x2": self.vertices[3][0],
+                "x2": self.x,
                 "y2": self.y + self.scaled_height + 2 * ShapeLabel.LABEL_SIDE_LENGTH,
-                "x3": self.vertices[0][0],
+                "x3": self.x + self.scaled_width,
                 "y3": self.y + self.scaled_height + 2 * ShapeLabel.LABEL_SIDE_LENGTH,
-                "x4": self.vertices[0][0],
+                "x4": self.x + self.scaled_width,
                 "y4": self.y + self.scaled_height
             }
             width_label = ShapeLabel(panel=self, label_type='width', coordinates=width_label_cords)
 
             height_label_cords = {
                 "x1": self.x,
-                "y1": self.vertices[5][1],
+                "y1": self.y,
                 "x2": self.x - 2 * ShapeLabel.LABEL_SIDE_LENGTH,
-                "y2": self.vertices[5][1],
+                "y2": self.y,
                 "x3": self.x - 2 * ShapeLabel.LABEL_SIDE_LENGTH,
-                "y3": self.vertices[1][1],
+                "y3": self.y + self.scaled_height,
                 "x4": self.x,
-                "y4": self.vertices[1][1]
+                "y4": self.y + self.scaled_height
             }
             height_label = ShapeLabel(panel=self, label_type='height', coordinates=height_label_cords)
             width_label.draw()
@@ -137,12 +171,19 @@ class Octagon:
             self._size_labels.append(height_label)
 
         for panel in self.raw_params['panels']:
-            x_offset = (self.scaled_width - panel['width'] * self.scale_factor) / 2
-            y_offset = (self.scaled_height - panel['height'] * self.scale_factor) / 2
+            panel['width'] = self.width * 0.95
+            panel['height'] = self.height * 0.95
 
-            child_panel = Octagon(x=self.x + x_offset, y=self.y + x_offset,
-                                  raw_params=panel, scale_factor=self.scale_factor,
-                                  draw_label=self.draw_label)
+            # add height 2 in panel params
+            if 'height_2' not in panel.keys():
+                panel['height_2'] = panel['height'] - math.tan(bottom_angle) * panel['width']
+
+            x_offset = (self.scaled_width - panel['width'] * self.scale_factor) / 2
+            y_offset = (self.scaled_height_2 + self.scaled_height) / 2 * 0.05 / 2
+
+            child_panel = Trapezoid(x=self.x + x_offset, y=self.y + y_offset,
+                                    raw_params=panel, scale_factor=self.scale_factor,
+                                    draw_label=self.draw_label)
 
             self.child_labels.append(child_panel)
 
@@ -151,39 +192,35 @@ class Octagon:
             self.panel_type = panel['panel_type']
             self.name = panel['name'] if panel['panel_type'] == 'panel' else 'frame'
 
-            side_length = self.scaled_height / 2
-
-            # Draw panel
-            self.draw_octagon(center_x=self.x + self.scaled_width / 2 + x_offset,
-                              center_y=self.y + self.scaled_height / 2 + y_offset,
-                              side_length=side_length,
-                              thickness=1)
+            # draw panel
+            self.draw_trapezoid(x=self.x + x_offset, y=self.y + y_offset, width=self.scaled_width,
+                                height=self.scaled_height, height_2=self.scaled_height_2, thickness=1)
 
             self.x = self.x + x_offset
-            self.y = self.y + x_offset
+            self.y = self.y + y_offset
 
             if self.draw_label:
                 width_label_cords = {
-                    "x1": self.vertices[3][0],
+                    "x1": self.x,
                     "y1": self.y + self.scaled_height,
-                    "x2": self.vertices[3][0],
+                    "x2": self.x,
                     "y2": self.y + self.scaled_height + ShapeLabel.LABEL_SIDE_LENGTH,
-                    "x3": self.vertices[0][0],
+                    "x3": self.x + self.scaled_width,
                     "y3": self.y + self.scaled_height + ShapeLabel.LABEL_SIDE_LENGTH,
-                    "x4": self.vertices[0][0],
+                    "x4": self.x + self.scaled_width,
                     "y4": self.y + self.scaled_height
                 }
                 width_label = ShapeLabel(panel=self, label_type='width', coordinates=width_label_cords)
 
                 height_label_cords = {
                     "x1": self.x,
-                    "y1": self.vertices[5][1],
+                    "y1": self.y,
                     "x2": self.x - ShapeLabel.LABEL_SIDE_LENGTH,
-                    "y2": self.vertices[5][1],
+                    "y2": self.y,
                     "x3": self.x - ShapeLabel.LABEL_SIDE_LENGTH,
-                    "y3": self.vertices[1][1],
+                    "y3": self.y + self.scaled_height,
                     "x4": self.x,
-                    "y4": self.vertices[1][1],
+                    "y4": self.y + self.scaled_height
                 }
                 height_label = ShapeLabel(panel=self, label_type='height', coordinates=height_label_cords)
                 width_label.draw()

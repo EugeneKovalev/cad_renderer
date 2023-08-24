@@ -21,7 +21,14 @@ class Panel:
         self.raw_params = raw_params
 
         self.panel_type = raw_params['panel_type']
-        self.name = raw_params['name'] if raw_params['panel_type'] == 'panel' else 'frame'
+
+        if raw_params.get('name'):
+            self.name = raw_params['name']
+        elif raw_params['panel_type'] == 'panel':
+            self.name = 'panel'
+        else:
+            self.name = 'frame'
+
         self.move_direction = raw_params.get('move_direction')
         self.scale_factor = scale_factor
 
@@ -68,6 +75,13 @@ class Panel:
     def raw_child_frames(self):
         return self.raw_params.get('frames') or []
 
+    def group_by_rows(self, raw_panels):
+        sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
+        group_by = lambda _: _['coordinates']['y']
+
+        _sorted = sorted(raw_panels, key=sort_by)
+        return {k: list(v) for k, v in itertools.groupby(_sorted, key=group_by)}
+
     def get_normalized_child_frame(self, raw_frame):
         from services.normalization_service import NormalizationService
 
@@ -86,23 +100,49 @@ class Panel:
     def get_normalized_child_panel(self, raw_panel):
         from services.normalization_service import NormalizationService
 
-        scaled_total_child_width = sum([_['width'] * self.scale_factor for _ in self.raw_child_panels])
-        scaled_total_child_height = sum([_['height'] * self.scale_factor for _ in self.raw_child_panels])
+        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels)
 
-        invalid_condition_1 = self.child_panels_layout == 'horizontal' and self.scaled_width < scaled_total_child_width
-        invalid_condition_2 = self.child_panels_layout == 'vertical' and self.scaled_height < scaled_total_child_height
+        if are_coordinates_specified:
+            row_panels = [_ for _ in self.raw_child_panels if _['coordinates']['y'] == raw_panel['coordinates']['y']]
+            scaled_total_child_width = sum([_['width'] * self.scale_factor for _ in row_panels])
 
-        if invalid_condition_1 or invalid_condition_2:
-            if self.child_panels_layout == 'horizontal':
-                factor = self.scaled_width / scaled_total_child_width
-                service = NormalizationService(width_factor=factor, height_factor=1)
-            else:
-                factor = self.scaled_height / scaled_total_child_height
-                service = NormalizationService(width_factor=1, height_factor=factor)
+            scaled_total_child_height = 0
+            for row, row_panels in self.group_by_rows(self.raw_child_panels).items():
+                scaled_total_child_height += max(_['height'] for _ in row_panels) * self.scale_factor
+
+            invalid_condition_1 = self.scaled_dlo_width < scaled_total_child_width
+            invalid_condition_2 = self.scaled_dlo_height < scaled_total_child_height
+
+            width_factor = 1
+            height_factor = 1
+
+            if invalid_condition_1:
+                width_factor = self.scaled_width / scaled_total_child_width
+
+            if invalid_condition_2:
+                height_factor = self.scaled_height / scaled_total_child_height
+
+            service = NormalizationService(width_factor=width_factor, height_factor=height_factor)
 
             return service.run(deepcopy(raw_panel))
         else:
-            return raw_panel
+            scaled_total_child_width = sum([_['width'] * self.scale_factor for _ in self.raw_child_panels])
+            scaled_total_child_height = sum([_['height'] * self.scale_factor for _ in self.raw_child_panels])
+
+            invalid_condition_1 = self.child_panels_layout == 'horizontal' and self.scaled_width < scaled_total_child_width
+            invalid_condition_2 = self.child_panels_layout == 'vertical' and self.scaled_height < scaled_total_child_height
+
+            if invalid_condition_1 or invalid_condition_2:
+                if self.child_panels_layout == 'horizontal':
+                    factor = self.scaled_width / scaled_total_child_width
+                    service = NormalizationService(width_factor=factor, height_factor=1)
+                else:
+                    factor = self.scaled_height / scaled_total_child_height
+                    service = NormalizationService(width_factor=1, height_factor=factor)
+
+                return service.run(deepcopy(raw_panel))
+            else:
+                return raw_panel
 
     @property
     def child_panels_layout(self):
@@ -178,6 +218,50 @@ class Panel:
             y1 += max([_['height'] * self.scale_factor for _ in _frames])
 
     def _draw_child_panels(self):
+        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels)
+        if are_coordinates_specified:
+            self._draw_child_panels__by_coordinates()
+        else:
+            self._draw_child_panels__by_names()
+
+    def _draw_child_panels__by_coordinates(self):
+        normalized_raw_child_panels = [self.get_normalized_child_panel(raw_panel=_) for _ in self.raw_child_panels]
+
+        sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
+        group_by = lambda _: _['coordinates']['y']
+
+        sorted_normalized_raw_child_panels = sorted(normalized_raw_child_panels, key=sort_by)
+        row__w__panels = {k: list(v) for k, v in itertools.groupby(sorted_normalized_raw_child_panels, key=group_by)}
+
+        sum_of_max_heights = sum(max(_['height'] for _ in row_panels) for row_panels in row__w__panels.values())
+
+        # scaled_total_normalized_child_width = max_sum_of_widths_per_row * self.scale_factor
+        scaled_total_normalized_child_height = sum_of_max_heights * self.scale_factor
+
+        # x_offset = (self.scaled_dlo_width - scaled_total_normalized_child_width) / 2
+        y_offset = (self.scaled_dlo_height - scaled_total_normalized_child_height) / 2
+
+        sum_of_max_heights = 0
+        for row_number, row_panels in row__w__panels.items():
+            widths_sum = sum(_['width'] for _ in row_panels) * self.scale_factor
+            x_offset = (self.scaled_dlo_width - widths_sum) / 2
+
+            new_child_panel_instances = []
+            for panel in row_panels:
+                panel = Panel(
+                    x=self.x + x_offset + sum(_.scaled_width for _ in new_child_panel_instances),
+                    y=self.y + y_offset + sum_of_max_heights,
+                    parent_panel=self,
+                    raw_params=panel
+                ).set_context(self.context).draw()
+
+                new_child_panel_instances.append(panel)
+
+            self.child_panels += new_child_panel_instances
+
+            sum_of_max_heights += max(_.scaled_height for _ in new_child_panel_instances)
+
+    def _draw_child_panels__by_names(self):
         normalized_raw_child_panels = [self.get_normalized_child_panel(raw_panel=_) for _ in self.raw_child_panels]
 
         scaled_total_normalized_child_width = sum([_['width'] * self.scale_factor for _ in normalized_raw_child_panels])
@@ -190,7 +274,8 @@ class Panel:
             y_offset = (self.scaled_height - scaled_total_normalized_child_height) / 2
 
         previous_panel = None
-        for normalized_child_panel in sorted(normalized_raw_child_panels, key=lambda _: _['name'], reverse=self.child_panels_layout == 'vertical'):
+        for normalized_child_panel in sorted(normalized_raw_child_panels, key=lambda _: _['name'],
+                                             reverse=self.child_panels_layout == 'vertical'):
             if self.child_panels_layout == 'horizontal':
                 y_offset = (self.scaled_height - normalized_child_panel['height'] * self.scale_factor) / 2
             elif self.child_panels_layout == 'vertical':

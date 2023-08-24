@@ -3,12 +3,12 @@ services:
   app:
     build: .
     container_name: app-cad-renderer
-#    command: tail -f /dev/null
-    command: sh -c "python -m ptvsd --host 0.0.0.0 --port 5678 --wait /app/run.py"
+    command: tail -f /dev/null
+#    command: sh -c "python -m ptvsd --host 0.0.0.0 --port 5678 --wait /app/run.py"
     volumes:
       - ./:/app
     ports:
       - "5002:5002"
       - "5678:5678"
-#    entrypoint: [ "sh", "-c", "python /app/run.py" ]
+    entrypoint: [ "sh", "-c", "python /app/run.py" ]
 

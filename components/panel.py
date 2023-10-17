@@ -160,6 +160,17 @@ class Panel:
         self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
         self.context.stroke()
 
+        if self.raw_params.get('has_louver'):
+            self.context.set_line_width(5)
+            self.context.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+
+            start_y = self.y
+            while start_y < self.scaled_height:
+                start_y += 10
+                self.context.move_to(self.x, start_y)
+                self.context.line_to(self.x + self.scaled_width, start_y)
+                self.context.stroke()
+
         self.context.restore()
 
     def _draw_panel(self):

@@ -262,7 +262,7 @@ class Canvas:
 
     def __draw_frame(self, context):
         from components.panel import Panel
-
+        print(self.raw_params)
         initial_frame = Panel(
             x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width,
             y=self.BORDER_BOTTOM_OFFSET,

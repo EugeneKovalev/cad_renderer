@@ -11,4 +11,4 @@ def index():
     return static_file(canvas.filename, root='/', download=True)
 
 
-run(host='0.0.0.0', port=5002)
+run(host='0.0.0.0', port=5002, reloader=True)

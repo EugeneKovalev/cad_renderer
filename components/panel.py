@@ -1,11 +1,11 @@
 import itertools
+import math
 from copy import deepcopy
-from typing import List
 
 import cairo
-import math
 
 from enums.colors import Colors
+from .muntin import Muntin
 
 
 class Panel:
@@ -74,6 +74,10 @@ class Panel:
     @property
     def raw_child_frames(self):
         return self.raw_params.get('frames') or []
+
+    @property
+    def muntin_parameters(self):
+        return self.raw_params.get('muntin_parameters') or {}
 
     def group_by_rows(self, raw_panels):
         sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
@@ -195,9 +199,12 @@ class Panel:
         self.context.set_line_width(0.5)
         self.context.rectangle(self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
                                self.scaled_dlo_height)
+
         self.context.stroke()
 
         self.context.restore()
+
+        Muntin.draw_muntin(self)
 
     def _draw_child_frames(self):
         sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
@@ -276,7 +283,8 @@ class Panel:
         normalized_raw_child_panels = [self.get_normalized_child_panel(raw_panel=_) for _ in self.raw_child_panels]
 
         scaled_total_normalized_child_width = sum([_['width'] * self.scale_factor for _ in normalized_raw_child_panels])
-        scaled_total_normalized_child_height = sum([_['height'] * self.scale_factor for _ in normalized_raw_child_panels])
+        scaled_total_normalized_child_height = sum(
+            [_['height'] * self.scale_factor for _ in normalized_raw_child_panels])
 
         x_offset, y_offset = 0, 0
         if self.child_panels_layout == 'horizontal':

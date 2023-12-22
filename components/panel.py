@@ -104,7 +104,7 @@ class Panel:
     def get_normalized_child_panel(self, raw_panel):
         from services.normalization_service import NormalizationService
 
-        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels)
+        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels if 'coordinates' in _)
 
         if are_coordinates_specified:
             row_panels = [_ for _ in self.raw_child_panels if _['coordinates']['y'] == raw_panel['coordinates']['y']]
@@ -236,7 +236,7 @@ class Panel:
             y1 += max([_['height'] * self.scale_factor for _ in _frames])
 
     def _draw_child_panels(self):
-        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels)
+        are_coordinates_specified = any(_['coordinates'] for _ in self.raw_child_panels if 'coordinates' in _)
         if are_coordinates_specified:
             self._draw_child_panels__by_coordinates()
         else:

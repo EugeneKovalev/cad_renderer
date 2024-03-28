@@ -79,6 +79,10 @@ class Panel:
     def muntin_parameters(self):
         return self.raw_params.get('muntin_parameters') or {}
 
+    @property
+    def muntin_parts(self):
+        return self.raw_params.get('muntin_parts') or []
+
     def group_by_rows(self, raw_panels):
         sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
         group_by = lambda _: _['coordinates']['y']
@@ -204,7 +208,7 @@ class Panel:
 
         self.context.restore()
 
-        Muntin.draw_muntin(self)
+        Muntin(panel_object=self).draw_muntin()
 
     def _draw_child_frames(self):
         sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"

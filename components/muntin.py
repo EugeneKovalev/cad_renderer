@@ -3,44 +3,68 @@ from enums.colors import Colors
 
 class Muntin:
 
-    def __init__(self):
-        pass
+    def __init__(self, panel_object):
+        self.panel_object = panel_object
 
-    @staticmethod
-    def draw_line(context, points):
+    def draw_line(self, points):
         """
         Args: points - ((x,y),(x1,y1)) - tuple of points to draw line bw
 
         """
-        context.move_to(points[0][0], points[0][1])
-        context.line_to(points[1][0], points[1][1])
-        context.stroke()
+        self.panel_object.context.move_to(points[0][0], points[0][1])
+        self.panel_object.context.line_to(points[1][0], points[1][1])
+        self.panel_object.context.stroke()
 
-    @staticmethod
-    def draw_muntin(panel_object):
-        muntin_parameters = panel_object.muntin_parameters
-        context = panel_object.context
+    def draw_muntin_part_from_placements(self, part_data, x, y):
+        for position in part_data['placement_positions']:
+            scaled_start = position * self.panel_object.scale_factor
+            scaled_part_length = part_data['length'] * self.panel_object.scale_factor
+
+            if part_data['orientation'] == 'vertical':
+                start_point = (x + scaled_start, y)
+                end_point = (x + scaled_start, y + scaled_part_length)
+            else:
+                start_point = (x, y + scaled_start)
+                end_point = (x + scaled_part_length, y + scaled_start)
+            self.draw_line((start_point, end_point))
+
+    def draw_muntin(self):
+        muntin_parameters = self.panel_object.muntin_parameters
+        context = self.panel_object.context
+
+        context.save()
+
+        # calculate start x and y
+        dlo_x_offset = (self.panel_object.scaled_width - self.panel_object.scaled_dlo_width) / 2
+        dlo_y_offset = (self.panel_object.scaled_height - self.panel_object.scaled_dlo_height) / 2
+
+        dlo_width = self.panel_object.scaled_dlo_width
+        dlo_height = self.panel_object.scaled_dlo_height
+
+        x = self.panel_object.x + dlo_x_offset
+        y = self.panel_object.y + dlo_y_offset
+
+        b_offset = 0.10 * dlo_width
+
+        # start draw
+        if self.panel_object.muntin_parts:
+            # muntins from parts placements
+            context.set_source_rgba(*Colors.BLACK)
+            context.set_line_width(0.5)
+
+            for part in self.panel_object.muntin_parts:
+                self.draw_muntin_part_from_placements(part, x, y)
+
+            context.restore()
+            return
 
         pattern = muntin_parameters.get('pattern', '')
 
         if not pattern:
             return
 
-        context.save()
-
-        dlo_x_offset = (panel_object.scaled_width - panel_object.scaled_dlo_width) / 2
-        dlo_y_offset = (panel_object.scaled_height - panel_object.scaled_dlo_height) / 2
-
         context.set_source_rgba(*Colors.BLACK)
         context.set_line_width(0.5)
-
-        dlo_width = panel_object.scaled_dlo_width
-        dlo_height = panel_object.scaled_dlo_height
-
-        x = panel_object.x + dlo_x_offset
-        y = panel_object.y + dlo_y_offset
-
-        b_offset = 0.10 * dlo_width
 
         if pattern == 'grid':
             rows = muntin_parameters['rows']
@@ -54,26 +78,26 @@ class Muntin:
 
             while x < terminate_x:
                 x = x + dlo_width / columns
-                Muntin.draw_line(context, ((x, y), (x, y + dlo_height)))
+                self.draw_line(((x, y), (x, y + dlo_height)))
 
             # draw horizontal lines
             # reset x to initial value
-            x = panel_object.x + dlo_x_offset
+            x = self.panel_object.x + dlo_x_offset
 
             # y co-ordinate for end of the dlo
             terminate_y = y + dlo_height
 
             while y < terminate_y:
                 y = y + dlo_height / rows
-                Muntin.draw_line(context, ((x, y), (x + dlo_width, y)))
+                self.draw_line(((x, y), (x + dlo_width, y)))
 
         elif pattern in ['brittany-6', 'brittany-9']:
-            Muntin.draw_line(context, ((x + b_offset, y), (x + b_offset, y + dlo_height)))
-            Muntin.draw_line(context, ((x + dlo_width - b_offset, y), (x + dlo_width - b_offset, y + dlo_height)))
+            self.draw_line(((x + b_offset, y), (x + b_offset, y + dlo_height)))
+            self.draw_line(((x + dlo_width - b_offset, y), (x + dlo_width - b_offset, y + dlo_height)))
 
-            Muntin.draw_line(context, ((x, y + dlo_height - b_offset), (x + dlo_width, y + dlo_height - b_offset)))
+            self.draw_line(((x, y + dlo_height - b_offset), (x + dlo_width, y + dlo_height - b_offset)))
 
         if pattern == 'brittany-9':
-            Muntin.draw_line(context, ((x, y + b_offset), (x + dlo_width, y + b_offset)))
+            self.draw_line(((x, y + b_offset), (x + dlo_width, y + b_offset)))
 
         context.restore()

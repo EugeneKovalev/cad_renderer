@@ -2,6 +2,7 @@ import cairo
 import math
 
 from components.shapes.shape_label import ShapeLabel
+from components.utils import find_asin
 from enums.colors import Colors
 
 
@@ -132,7 +133,7 @@ class Eyebrow:
             center_y = self.y + self.scaled_height_2 / 2 - (radius - arc_height)
 
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(arc_width / (2 * radius))
+            central_angle = 2 * find_asin(arc_width / (2 * radius))
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)
@@ -181,7 +182,7 @@ class Eyebrow:
             center_x = self.x + self.scaled_width / 2
             center_y = self.y + self.scaled_height_2 - (radius - arc_height) - brittany_offset
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(self.scaled_width / (2 * radius))
+            central_angle = 2 * find_asin(self.scaled_width / (2 * radius))
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)
             self.draw_arch(center_x=center_x, center_y=center_y, radius=radius, thickness=1, start_angle=start_angle)
@@ -229,7 +230,7 @@ class Eyebrow:
         center_y = self.y - (radius - height)
 
         # Calculate the central angle of the chord
-        central_angle = 2 * math.asin(width / (2 * radius))
+        central_angle = 2 * find_asin(width / (2 * radius))
 
         # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
         start_angle = math.pi / 2 - (central_angle / 2)
@@ -252,7 +253,7 @@ class Eyebrow:
         center_y = self.y + self.scaled_height_2 - (radius - arc_height)
 
         # Calculate the central angle of the chord
-        central_angle = 2 * math.asin(self.scaled_width / (2 * radius))
+        central_angle = 2 * find_asin(self.scaled_width / (2 * radius))
 
         # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
         start_angle = math.pi / 2 - (central_angle / 2)
@@ -323,7 +324,7 @@ class Eyebrow:
             center_y = self.y + self.scaled_height_2 - (radius - arc_height)
 
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(self.scaled_width / (2 * radius))
+            central_angle = 2 * find_asin(self.scaled_width / (2 * radius))
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)

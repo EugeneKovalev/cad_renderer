@@ -3,6 +3,7 @@ import math
 import cairo
 
 from components.shapes.shape_label import ShapeLabel
+from components.utils import find_asin
 from enums.colors import Colors
 
 
@@ -148,7 +149,7 @@ class HalfCircle:
 
             # draw inner semi circle
             inner_radius = self.scaled_width / 4
-            start_angle = math.asin(start_offset / inner_radius)
+            start_angle = find_asin(start_offset / inner_radius)
 
             self.draw_half_circle(center_x=self.x + self.scaled_width / 2 + start_offset,
                                   center_y=self.y,
@@ -174,7 +175,7 @@ class HalfCircle:
 
             # draw inner semi circle
             inner_radius = self.scaled_width / 4
-            start_angle = math.asin(start_offset / inner_radius)
+            start_angle = find_asin(start_offset / inner_radius)
             self.draw_half_circle(center_x=self.x + self.scaled_width / 2 + start_offset, center_y=self.y,
                                   radius=inner_radius, thickness=1, start_angle=start_angle, start_offset=start_offset)
 
@@ -273,7 +274,7 @@ class HalfCircle:
 
             # in case of inner panels, half circle is cur at the base, find the start angle for that
             radius = self.scaled_height
-            start_angle = math.asin(x_offset / radius)
+            start_angle = find_asin(x_offset / radius)
 
             self.draw_half_circle(center_x=self.x + self.scaled_height + x_offset,
                                   center_y=self.y,

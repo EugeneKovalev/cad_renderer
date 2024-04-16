@@ -3,6 +3,7 @@ import math
 import cairo
 
 from components.shapes.shape_label import ShapeLabel
+from components.utils import find_asin
 from enums.colors import Colors
 import logging
 
@@ -115,7 +116,7 @@ class Arch:
             self.draw_line((center_x - x, center_y + y + start_offset), (center_x, center_y + start_offset))
 
     def find_arc_touch_points(self, radius, arc_width, arc_height, touch_point_count):
-        central_angle = 2 * math.asin(arc_width / (2 * radius))
+        central_angle = 2 * find_asin(arc_width / (2 * radius))
 
         # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
         start_angle = math.pi / 2 - (central_angle / 2)
@@ -156,7 +157,7 @@ class Arch:
             center_y = self.y - (sun_radius - sun_height)
 
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(sun_width / (2 * sun_radius))
+            central_angle = 2 * find_asin(sun_width / (2 * sun_radius))
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)
@@ -176,7 +177,7 @@ class Arch:
             sun_center_y = self.y - (sun_radius - sun_height) + y_offset
 
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(sun_width / (2 * sun_radius))
+            central_angle = 2 * find_asin(sun_width / (2 * sun_radius))
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)
@@ -234,7 +235,7 @@ class Arch:
         center_y = self.y - (radius - height)
 
         # Calculate the central angle of the chord
-        central_angle = 2 * math.asin(width / (2 * radius))
+        central_angle = 2 * find_asin(width / (2 * radius))
 
         # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
         start_angle = math.pi / 2 - (central_angle / 2)
@@ -305,7 +306,7 @@ class Arch:
             center_y = self.y - (radius - self.scaled_height - y_offset)
 
             # Calculate the central angle of the chord
-            central_angle = 2 * math.asin(self.scaled_width / (2 * radius))
+            central_angle = 2 * find_asin(self.scaled_width / (2 * radius))
 
             # Calculate the start angle by subtracting half of the central angle from pi/2 (90 degrees)
             start_angle = math.pi / 2 - (central_angle / 2)

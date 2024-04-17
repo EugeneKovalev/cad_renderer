@@ -6,11 +6,57 @@ class Muntin:
     def __init__(self, panel_object):
         self.panel_object = panel_object
 
+    def validate_muntin_x(self, x):
+        """
+        Args: x - int - x co-ordinate of a point
+
+        Function checks if the x falls in between minx and max x of dlo; if not clamp it to min or max
+        """
+        if x < self.dlo_min_x:
+            x = self.dlo_min_x
+        elif x > self.dlo_max_x:
+            x = self.dlo_max_x
+
+        return x
+
+    def validate_muntin_y(self, y):
+        """
+        Args: y - int - y co-ordinate of a point
+
+        Function checks if the y falls in between min_y and max_y of dlo; if not clamp it to min or max
+        """
+        if y < self.dlo_min_y:
+            y = self.dlo_min_y
+        elif y > self.dlo_max_y:
+            y = self.dlo_max_y
+
+        return y
+
+    def validate_muntin_points(self, points):
+        """
+        Args: points - ((x,y),(x1,y1)) - tuple of points to draw line bw
+
+        Function checks if the points falls in the dlo area (check for overflow)
+        and returns the updated points
+        """
+        x1, y1 = points[0][0], points[0][1]
+        x2, y2 = points[1][0], points[1][1]
+
+        x1 = self.validate_muntin_x(x1)
+        x2 = self.validate_muntin_x(x2)
+
+        y1 = self.validate_muntin_y(y1)
+        y2 = self.validate_muntin_y(y2)
+
+        return (x1, y1), (x2, y2)
+
     def draw_line(self, points, thickness=None):
         """
         Args: points - ((x,y),(x1,y1)) - tuple of points to draw line bw
 
         """
+        # checks and invalidates if there is any overflow wrt dlo area
+        points = self.validate_muntin_points(points)
 
         if thickness:
             # draw as a rectangle
@@ -27,6 +73,13 @@ class Muntin:
                 # its a horizontal line
                 height = width
                 width = abs(x2 - x1)
+
+            # modify width and height such that it won't overflow the dlo_area
+            if x + width > self.dlo_max_x:
+                width = self.dlo_max_x - x
+
+            if y + height > self.dlo_max_y:
+                height = self.dlo_max_y - y
 
             self.panel_object.context.rectangle(x, y, width, height)
             self.panel_object.context.fill()
@@ -82,6 +135,8 @@ class Muntin:
 
         self.dlo_min_x = x
         self.dlo_min_y = y
+        self.dlo_max_x = x + dlo_width
+        self.dlo_max_y = y + dlo_height
 
         b_offset = 0.10 * dlo_width
 

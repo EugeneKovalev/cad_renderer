@@ -151,22 +151,24 @@ class Muntin:
                 self.draw_muntin_part_from_placements(part, x, y)
 
             # draw labels for vertical parts
-            vertical_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'vertical']
+            # commented to fix the multi panel issue
 
-            # a part can be placed at multiple points, gather each placement and keep it in ascending order
-            vertical_parts = self.__sort_muntin_parts(vertical_parts)
-            vertical_parts = self.__unique_position_parts(vertical_parts)
-
-            self.draw_muntin_labels(vertical_parts)
-
-            # horizontal parts
-            horizontal_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'horizontal']
-
-            # a part can be placed at multiple points, gather each placement and keep it in ascending order
-            horizontal_parts = self.__sort_muntin_parts(horizontal_parts)
-            horizontal_parts = self.__unique_position_parts(horizontal_parts)
-
-            self.draw_muntin_labels(horizontal_parts)
+            # vertical_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'vertical']
+            #
+            # # a part can be placed at multiple points, gather each placement and keep it in ascending order
+            # vertical_parts = self.__sort_muntin_parts(vertical_parts)
+            # vertical_parts = self.__unique_position_parts(vertical_parts)
+            #
+            # self.draw_muntin_labels(vertical_parts)
+            #
+            # # horizontal parts
+            # horizontal_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'horizontal']
+            #
+            # # a part can be placed at multiple points, gather each placement and keep it in ascending order
+            # horizontal_parts = self.__sort_muntin_parts(horizontal_parts)
+            # horizontal_parts = self.__unique_position_parts(horizontal_parts)
+            #
+            # self.draw_muntin_labels(horizontal_parts)
 
             context.restore()
             return

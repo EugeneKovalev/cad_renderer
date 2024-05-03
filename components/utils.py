@@ -31,6 +31,10 @@ def has_muntin_parts(raw_params):
     Returns:
         bool: True if muntin_parts are found within "frames" or "panels", False otherwise.
     """
+
+    # added to fix the multi panel issue
+    return False
+
     if 'frames' in raw_params:
         for frame in raw_params['frames']:
             if 'muntin_parts' in frame and frame['muntin_parts']:

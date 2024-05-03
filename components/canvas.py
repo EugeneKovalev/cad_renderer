@@ -15,6 +15,7 @@ from components.shapes.shape_label import ShapeLabel
 from components.shapes.tombstone import Tombstone
 from components.shapes.trapezoid import Trapezoid
 from components.shapes.triangle import Triangle
+from components.utils import has_muntin_parts
 from enums.colors import Colors
 
 
@@ -218,11 +219,19 @@ class Canvas:
 
     @cached_property
     def scaled_framed_width_with_labels(self):
-        return self.scaled_frame_width + self.left_positioned_labels_width
+        if has_muntin_parts(self.raw_params):
+            extra_padding = 60
+        else:
+            extra_padding = 0
+        return self.scaled_frame_width + self.left_positioned_labels_width + extra_padding
 
     @cached_property
     def scaled_framed_height_with_labels(self):
-        return self.scaled_frame_height + self.top_positioned_labels_height
+        if has_muntin_parts(self.raw_params):
+            extra_padding = 30
+        else:
+            extra_padding = 0
+        return self.scaled_frame_height + self.top_positioned_labels_height + extra_padding
 
     @cached_property
     def canvas_width(self):
@@ -263,9 +272,17 @@ class Canvas:
     def __draw_frame(self, context):
         from components.panel import Panel
         print(self.raw_params)
+
+        if has_muntin_parts(self.raw_params):
+            x = self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width + 15
+            y = self.BORDER_BOTTOM_OFFSET + 30
+        else:
+            x = self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width
+            y = self.BORDER_BOTTOM_OFFSET
+
         initial_frame = Panel(
-            x=self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width,
-            y=self.BORDER_BOTTOM_OFFSET,
+            x=x,
+            y=y,
             parent_panel=None,
             raw_params=self.raw_params,
             scale_factor=self.raw_params.get('scale_factor') or 5

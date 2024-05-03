@@ -1,3 +1,4 @@
+from components.muntin_label import MuntinLabel
 from enums.colors import Colors
 
 
@@ -149,6 +150,24 @@ class Muntin:
             for part in self.panel_object.muntin_parts:
                 self.draw_muntin_part_from_placements(part, x, y)
 
+            # draw labels for vertical parts
+            vertical_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'vertical']
+
+            # a part can be placed at multiple points, gather each placement and keep it in ascending order
+            vertical_parts = self.__sort_muntin_parts(vertical_parts)
+            vertical_parts = self.__unique_position_parts(vertical_parts)
+
+            self.draw_muntin_labels(vertical_parts)
+
+            # horizontal parts
+            horizontal_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'horizontal']
+
+            # a part can be placed at multiple points, gather each placement and keep it in ascending order
+            horizontal_parts = self.__sort_muntin_parts(horizontal_parts)
+            horizontal_parts = self.__unique_position_parts(horizontal_parts)
+
+            self.draw_muntin_labels(horizontal_parts)
+
             context.restore()
             return
 
@@ -195,3 +214,52 @@ class Muntin:
             self.draw_line(((x, y + b_offset), (x + dlo_width, y + b_offset)))
 
         context.restore()
+
+    def draw_muntin_labels(self, parts):
+        previous_label = None
+        for index, part in enumerate(parts):
+            # Make a copy of previous_label
+            current_previous_label = previous_label
+            muntin_label = MuntinLabel(index, part, self, current_previous_label)
+            muntin_label.draw()
+
+            previous_label = muntin_label
+
+    @staticmethod
+    def __sort_muntin_parts(parts):
+        """
+            Sorts muntin parts according to positions, ascending from min to max
+        """
+        sorted_parts = []
+        for part in parts:
+            for position in part['placement_positions']:
+                new_item = part.copy()
+                new_item['placement_position'] = position
+                del new_item['placement_positions']
+                sorted_parts.append(new_item)
+
+        # Sort the new list based on the 'placement_position' key
+        sorted_parts.sort(
+            key=lambda x: x['placement_position'] if isinstance(x['placement_position'], (float, int)) else
+            x['placement_position'][0])
+
+        return sorted_parts
+
+    @staticmethod
+    def __unique_position_parts(parts):
+        """
+            Filters out parts which are serially places on a same x/y index
+
+            args: parts - list of parts
+        """
+        unique_positions = set()
+        unique_parts = []
+
+        for item in parts:
+            position = item['placement_position'] if isinstance(item['placement_position'], (float, int)) else \
+            item['placement_position'][0]
+            if position not in unique_positions:
+                unique_positions.add(position)
+                unique_parts.append(item)
+
+        return unique_parts

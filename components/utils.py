@@ -19,3 +19,33 @@ def find_asin(value):
         return math.pi / 2  # arcsin(1) = pi/2
     else:
         return math.asin(value)
+
+
+def has_muntin_parts(raw_params):
+    """
+    Checks if the input params contains any muntin_parts within "frames" or "panels".
+
+    Args:
+        raw_params (dict): raw params.
+
+    Returns:
+        bool: True if muntin_parts are found within "frames" or "panels", False otherwise.
+    """
+    if 'frames' in raw_params:
+        for frame in raw_params['frames']:
+            if 'muntin_parts' in frame and frame['muntin_parts']:
+                return True
+    if 'panels' in raw_params:
+        for panel in raw_params['panels']:
+            if 'muntin_parts' in panel and panel['muntin_parts']:
+                return True
+    for key, value in raw_params.items():
+        if isinstance(value, dict):
+            if has_muntin_parts(value):
+                return True
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    if has_muntin_parts(item):
+                        return True
+    return False

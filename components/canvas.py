@@ -15,7 +15,7 @@ from components.shapes.shape_label import ShapeLabel
 from components.shapes.tombstone import Tombstone
 from components.shapes.trapezoid import Trapezoid
 from components.shapes.triangle import Triangle
-from components.utils import has_muntin_parts
+from components.utils import has_muntin_parts, find_muntin_label_offset_multipliers
 from enums.colors import Colors
 
 
@@ -115,12 +115,28 @@ class Canvas:
         return self.raw_params.get('scale_factor', 5)
 
     @cached_property
+    def muntin_labels_count_x(self):
+        labels_x, labels_y = find_muntin_label_offset_multipliers(self.raw_params)
+
+        return labels_x
+
+    @cached_property
+    def muntin_labels_count_y(self):
+        labels_x, labels_y = find_muntin_label_offset_multipliers(self.raw_params)
+
+        return labels_y
+
+    @cached_property
     def max_canvas_width(self):
         return self.raw_params.get('max_canvas_width')
 
     @cached_property
     def draw_label(self):
         return self.raw_params.get('draw_label', True)
+
+    @cached_property
+    def draw_muntin_label(self):
+        return self.raw_params.get('draw_muntin_label', False)
 
     @cached_property
     def is_transparent(self):
@@ -219,16 +235,16 @@ class Canvas:
 
     @cached_property
     def scaled_framed_width_with_labels(self):
-        if has_muntin_parts(self.raw_params):
-            extra_padding = 60
+        if self.draw_muntin_label and has_muntin_parts(self.raw_params):
+            extra_padding = 80 * self.muntin_labels_count_x
         else:
             extra_padding = 0
         return self.scaled_frame_width + self.left_positioned_labels_width + extra_padding
 
     @cached_property
     def scaled_framed_height_with_labels(self):
-        if has_muntin_parts(self.raw_params):
-            extra_padding = 30
+        if self.draw_muntin_label and has_muntin_parts(self.raw_params):
+            extra_padding = 40 * self.muntin_labels_count_y
         else:
             extra_padding = 0
         return self.scaled_frame_height + self.top_positioned_labels_height + extra_padding
@@ -273,9 +289,10 @@ class Canvas:
         from components.panel import Panel
         print(self.raw_params)
 
-        if has_muntin_parts(self.raw_params):
-            x = self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width + 15
-            y = self.BORDER_BOTTOM_OFFSET + 30
+        if self.draw_muntin_label and has_muntin_parts(self.raw_params):
+            # the diagram min_x and min_y should be positioned to handle the extra width and height of canvas
+            x = self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width + 15 * self.muntin_labels_count_x
+            y = self.BORDER_BOTTOM_OFFSET + 30 * self.muntin_labels_count_y
         else:
             x = self.BORDER_LEFT_OFFSET + self.left_positioned_labels_width
             y = self.BORDER_BOTTOM_OFFSET

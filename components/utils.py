@@ -32,9 +32,6 @@ def has_muntin_parts(raw_params):
         bool: True if muntin_parts are found within "frames" or "panels", False otherwise.
     """
 
-    # added to fix the multi panel issue
-    return False
-
     if 'frames' in raw_params:
         for frame in raw_params['frames']:
             if 'muntin_parts' in frame and frame['muntin_parts']:
@@ -53,3 +50,77 @@ def has_muntin_parts(raw_params):
                     if has_muntin_parts(item):
                         return True
     return False
+
+
+def find_muntin_label_offset_multipliers(raw_params):
+    """
+    Adds muntin_label_offset_multiplier_x and muntin_label_offset_multiplier_y attributes to 'panels' with more
+    than one muntin_part levels. to handle labels for muntins in multiple panels
+
+    It also returns the max x and y offset to calculate extra padding needed for the canvas frame
+
+    Args:
+        raw_params (dict): JSON data.
+
+    Returns:
+        dict: JSON data with added attributes 'muntin_label_offset_multiplier_y' and 'muntin_label_offset_multiplier_x'.
+        max_labels_x: count of labels on x axis
+        max_labels_y = count of labels on y axis
+    """
+    max_labels_x = 1
+    max_labels_y = 1
+
+    def process_frame(frame):
+
+        def calculate_rank_x(panel, prev_coord):
+            nonlocal max_labels_x
+            nonlocal rank_x
+
+            if panel['coordinates']['x'] > prev_coord:
+                rank_x += 1
+
+                if rank_x > max_labels_x:
+                    max_labels_x = rank_x
+
+            return rank_x
+
+        def calculate_rank_y(panel, prev_coord):
+            nonlocal max_labels_y
+            nonlocal rank_y
+            if panel['coordinates']['y'] > prev_coord:
+                rank_y += 1
+
+                if rank_y > max_labels_y:
+                    max_labels_y = rank_y
+            return rank_y
+
+        if 'panels' in frame:
+            frame['panels'] = sorted(frame['panels'], key=lambda x: x['coordinates']['x'])
+            prev_x = 0
+            rank_x = 0
+            for panel in frame['panels']:
+                if 'muntin_parts' in panel and len(panel['muntin_parts']) > 1:
+                    rank_x = calculate_rank_x(panel, prev_x)
+                    panel['muntin_label_offset_multiplier_x'] = rank_x
+                    prev_x = panel['coordinates']['x']
+
+            frame['panels'] = sorted(frame['panels'], key=lambda x: x['coordinates']['y'])
+            prev_y = 0
+            rank_y = 0
+            for panel in frame['panels']:
+                if 'muntin_parts' in panel and len(panel['muntin_parts']) > 1:
+                    rank_y = calculate_rank_y(panel, prev_y)
+                    panel['muntin_label_offset_multiplier_y'] = rank_y
+                    prev_y = panel['coordinates']['y']
+
+        for inner_frame in frame.get('frames', []):
+            process_frame(inner_frame)
+
+        return frame
+
+    for frame in raw_params.get('frames', []):
+        process_frame(frame)
+
+    process_frame(raw_params)
+
+    return max_labels_x, max_labels_y

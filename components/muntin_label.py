@@ -13,7 +13,7 @@ class MuntinLabel:
     STROKE_FORMAT = [3, 3]  # fill 3 pixels & skip 3 pixels
 
     TEXT_SIZE = 10
-    TEXT_OFFSET = 4
+    TEXT_OFFSET = 6
 
     def __init__(self, index, part, muntin_object, previous_label):
         """
@@ -168,7 +168,9 @@ class MuntinLabel:
         if self.type == 'vertical':
             return self.x1
         elif self.type == 'horizontal':
-            return self.x1 + self.LABEL_SIDE_LENGTH
+            offset_x = self.panel.raw_params.get('muntin_label_offset_multiplier_x', 1)
+            extra_padding = 0 if offset_x == 1 else offset_x * 15
+            return self.x1 + self.LABEL_SIDE_LENGTH * offset_x + extra_padding
 
     @cached_property
     def y2(self):
@@ -192,7 +194,7 @@ class MuntinLabel:
         """
 
         if self.type == 'vertical':
-            return self.y1 - self.LABEL_SIDE_LENGTH
+            return self.y1 - self.LABEL_SIDE_LENGTH * self.panel.raw_params.get('muntin_label_offset_multiplier_y', 1)
         elif self.type == 'horizontal':
             return self.y1
 
@@ -337,7 +339,7 @@ class MuntinLabel:
             ------
         """
         if self.type == 'vertical':
-            return self.y2 - self.TEXT_OFFSET - self.TEXT_SIZE
+            return self.y2 - self.TEXT_OFFSET / 2 - self.TEXT_SIZE
         elif self.type == 'horizontal':
             if self.previous_label:
                 return self.y2 + abs(self.scaled_gap_bw_prev_part()) / 2 - self.TEXT_SIZE / 3

@@ -83,6 +83,13 @@ class Panel:
     def muntin_parts(self):
         return self.raw_params.get('muntin_parts') or []
 
+    @property
+    def draw_muntin_label(self):
+        if self.parent_panel:
+            return self.parent_panel.draw_muntin_label
+
+        return self.raw_params.get('draw_muntin_label', False)
+
     def group_by_rows(self, raw_panels):
         sort_by = lambda _: f"{_['coordinates']['y']}_{_['coordinates']['x']}"
         group_by = lambda _: _['coordinates']['y']

@@ -4,6 +4,8 @@ from copy import deepcopy
 
 import cairo
 
+from components.helpers.direction_angle import DirectionAngle
+from components.utils import get_panel_direction_from_tree
 from enums.colors import Colors
 from .muntin import Muntin
 
@@ -78,6 +80,17 @@ class Panel:
     @property
     def muntin_parameters(self):
         return self.raw_params.get('muntin_parameters') or {}
+
+    @property
+    def constructor_data(self):
+        if self.parent_panel:
+            return self.parent_panel.constructor_data
+
+        return self.raw_params.get('constructor_data', {})
+
+    @property
+    def panel_direction(self):
+        return get_panel_direction_from_tree(self.constructor_data, self.name)
 
     @property
     def muntin_parts(self):
@@ -212,6 +225,16 @@ class Panel:
                                self.scaled_dlo_height)
 
         self.context.stroke()
+
+        # normal arrow code, commented now to use '>' across the DLO
+        # arrow_x = self.x + dlo_x_offset + self.scaled_dlo_width / 2
+        # arrow_y = self.y + dlo_y_offset + self.scaled_dlo_height / 2
+        #
+        # Arrow.draw_arrow(self.context, arrow_x, arrow_y, self.panel_direction)
+
+        # draw > direction on panel dlo
+        DirectionAngle.draw_arrow(self.context, self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
+                                  self.scaled_dlo_height, self.panel_direction)
 
         self.context.restore()
 

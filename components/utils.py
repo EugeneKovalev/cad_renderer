@@ -1,5 +1,5 @@
 import math
-
+from components.config import PANEL_DIRECTION_PARAM_NAME
 
 def find_asin(value):
     """
@@ -124,3 +124,22 @@ def find_muntin_label_offset_multipliers(raw_params):
     process_frame(raw_params)
 
     return max_labels_x, max_labels_y
+
+
+def get_panel_direction_from_tree(tree, panel_name):
+    for child in tree.get('children', []):
+        # Check if the child is a frame
+        if child.get('name') == panel_name:
+            for parameter in child.get("parameters", []):
+                if parameter.get("name") == PANEL_DIRECTION_PARAM_NAME:
+                    try:
+                        return parameter.get("value_name")
+                    except:
+                        pass
+        else:
+            for inner_child in tree.get('children', []):
+                direction = get_panel_direction_from_tree(inner_child, panel_name)
+                if direction:
+                    return direction
+
+    return None

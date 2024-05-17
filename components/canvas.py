@@ -170,6 +170,10 @@ class Canvas:
         return self.raw_params.get('draw_muntin_label', False)
 
     @cached_property
+    def constructor_data(self):
+        return self.raw_params.get('constructor_data', {})
+
+    @cached_property
     def is_transparent(self):
         return self.raw_params.get('is_transparent', False)
 

@@ -15,7 +15,7 @@ class TopView:
         self.parent_panel = None
         self.draw_label = draw_label
 
-        self.x = x
+        self.x = x + TopView.ENFORCEMENT_SIZE
         self.y = y
         self.raw_params = raw_params
 
@@ -131,7 +131,7 @@ class TopView:
 
             # find min and max of x to draw tracks enclosure
             panel_min_x = self.x + x_offset
-            panel_max_x = self.x + width - 20
+            panel_max_x = self.x + width/2
 
             prev_track_number = 1
 
@@ -142,7 +142,7 @@ class TopView:
                 track_number = get_track_number_of_panel(child)
 
                 if panel_index != 0 and track_number != prev_track_number:
-                    x_offset = x_offset - 10
+                    x_offset = x_offset - TopView.ENFORCEMENT_SIZE - 1
 
                 y_offset = og_y_offset + (track_number - 1) * 1.25 * TopView.ENFORCEMENT_SIZE + 2 * (
                         track_number - 1) if track_number != 1 else og_y_offset

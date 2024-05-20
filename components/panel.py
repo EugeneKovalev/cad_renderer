@@ -4,10 +4,12 @@ from copy import deepcopy
 
 import cairo
 
+from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
+from components.helpers.arrow import Arrow
 from components.helpers.direction_angle import DirectionAngle
+from components.muntin import Muntin
 from components.utils import get_panel_direction_from_tree
 from enums.colors import Colors
-from .muntin import Muntin
 
 
 class Panel:
@@ -91,6 +93,16 @@ class Panel:
     @property
     def panel_direction(self):
         return get_panel_direction_from_tree(self.constructor_data, self.name)
+
+    @property
+    def is_sliding_assembly(self):
+        assembly_version = self.constructor_data.get('assembly_version', {})
+        product_category_id = assembly_version.get('product_category_id')
+
+        if product_category_id == SLIDING_DOOR_PRODUCT_CATEGORY_ID:
+            return True
+        else:
+            return False
 
     @property
     def muntin_parts(self):
@@ -226,15 +238,20 @@ class Panel:
 
         self.context.stroke()
 
-        # normal arrow code, commented now to use '>' across the DLO
-        # arrow_x = self.x + dlo_x_offset + self.scaled_dlo_width / 2
-        # arrow_y = self.y + dlo_y_offset + self.scaled_dlo_height / 2
-        #
-        # Arrow.draw_arrow(self.context, arrow_x, arrow_y, self.panel_direction)
+        if self.is_sliding_assembly:
+            # normal arrow code
+            arrow_x = self.x + dlo_x_offset + self.scaled_dlo_width / 2
+            arrow_y = self.y + dlo_y_offset + self.scaled_dlo_height / 2
 
-        # draw > direction on panel dlo
-        DirectionAngle.draw_arrow(self.context, self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
-                                  self.scaled_dlo_height, self.panel_direction)
+            if self.panel_direction == 'left-right':
+                Arrow.draw_arrow(self.context, arrow_x, arrow_y + 8, 'left')
+                Arrow.draw_arrow(self.context, arrow_x, arrow_y - 8, 'right')
+            else:
+                Arrow.draw_arrow(self.context, arrow_x, arrow_y, self.panel_direction)
+        else:
+            # draw > direction on panel dlo
+            DirectionAngle.draw_arrow(self.context, self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
+                                      self.scaled_dlo_height, self.panel_direction)
 
         self.context.restore()
 

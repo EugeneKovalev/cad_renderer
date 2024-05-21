@@ -238,23 +238,29 @@ class Panel:
 
         self.context.stroke()
 
+        # DRAW PANEL DIRECTION
         if self.is_sliding_assembly:
             # normal arrow code
             arrow_x = self.x + dlo_x_offset + self.scaled_dlo_width / 2
             arrow_y = self.y + dlo_y_offset + self.scaled_dlo_height / 2
 
+            minimum_length = min(self.scaled_height, self.scaled_width)
+            arrow = Arrow(minimum_length / 10, minimum_length / 13)
+
             if self.panel_direction == 'left-right':
-                Arrow.draw_arrow(self.context, arrow_x, arrow_y + 8, 'left')
-                Arrow.draw_arrow(self.context, arrow_x, arrow_y - 8, 'right')
+                gap = max(8, minimum_length * 0.04)
+                arrow.draw(self.context, arrow_x, arrow_y + gap, 'right')
+                arrow.draw(self.context, arrow_x, arrow_y - gap, 'left')
             else:
-                Arrow.draw_arrow(self.context, arrow_x, arrow_y, self.panel_direction)
+                arrow.draw(self.context, arrow_x, arrow_y, self.panel_direction)
         else:
-            # draw > direction on panel dlo
-            DirectionAngle.draw_arrow(self.context, self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
-                                      self.scaled_dlo_height, self.panel_direction)
+            # draw > direction on panel dlo for operable/hinges
+            DirectionAngle.draw(self.context, self.x + dlo_x_offset, self.y + dlo_y_offset, self.scaled_dlo_width,
+                                self.scaled_dlo_height, self.panel_direction)
 
         self.context.restore()
 
+        # DRAW MUNTIN
         Muntin(panel_object=self).draw_muntin()
 
     def _draw_child_frames(self):

@@ -4,7 +4,7 @@ from enums.colors import Colors
 class DirectionAngle:
 
     @staticmethod
-    def draw_arrow(context, x, y, width, height, direction):
+    def draw(context, x, y, width, height, direction):
 
         context.set_dash([3, 3])
         context.set_source_rgba(*Colors.LIGHT_GREY)

@@ -1,25 +1,27 @@
 class Arrow:
     WIDTH = 20
     HEIGHT = 12
+    def __init__(self, width=20, height=12):
+        self.width = max(width, Arrow.WIDTH)
+        self.height = max(height, Arrow.HEIGHT)
 
-    @staticmethod
-    def draw_arrow(context, x, y, direction):
+    def draw(self, context, x, y, direction):
 
         if direction in ['top', 'down']:
-            height = Arrow.WIDTH
-            width = Arrow.HEIGHT
+            height = self.width
+            width = self.height
         else:
-            width = Arrow.WIDTH
-            height = Arrow.HEIGHT
+            width = self.width
+            height = self.height
 
         x = x - width / 2
         y = y - height / 2
 
-        a, b = 12, 8
+        a, b = width * 0.6, height*0.7
 
         context.set_line_width(1)
 
-        if direction == 'left':
+        if direction == 'right':
             points = [
                 (x, y + b),
                 (x, y + height - b),
@@ -30,7 +32,7 @@ class Arrow:
                 (x + a, y + b),
                 (x, y + b)
             ]
-        elif direction == "right":
+        elif direction == "left":
 
             points = [
                 (x + width, y + b),

@@ -9,7 +9,7 @@ class TopView:
     PANEL_HEIGHT = 10
     ENFORCEMENT_SIZE = 15
     TRACK_WRAP_THICKNESS = 10
-    TEXT_SIZE = 8
+    TEXT_SIZE = 10
 
     def __init__(self, x=0, y=0, raw_params=None, scale_factor=1, draw_label=True):
         self._context = None
@@ -107,7 +107,7 @@ class TopView:
 
         self.context.save()
 
-        self.y = self.y + (self.number_of_tracks - 1) * 2.25 * TopView.ENFORCEMENT_SIZE
+        self.y = self.y + (self.number_of_tracks - 1) * TopView.ENFORCEMENT_SIZE
 
         self.context.set_source_rgba(*Colors.BLACK)
         self.context.set_line_width(2)
@@ -144,38 +144,39 @@ class TopView:
             panel_min_x = self.x + x_offset
             panel_max_x = self.x + width / 2
 
-            prev_track_number = 1
+            prev_track_number = self.number_of_tracks
 
             for panel_index, child in enumerate(sorted_children):
                 if child.get('panel_type') != 'panel':
                     continue
 
-                track_number = self.number_of_tracks - get_track_number_of_panel(child)
+                track_number = self.number_of_tracks - get_track_number_of_panel(child) + 1
 
                 if panel_index != 0 and track_number != prev_track_number:
                     x_offset = x_offset - TopView.ENFORCEMENT_SIZE - 1
 
                 y_offset = og_y_offset + (track_number - 1) * 1.25 * TopView.ENFORCEMENT_SIZE + 2 * (
-                        track_number - 1) if track_number != 1 else og_y_offset
+                        track_number - 1) - 1 if track_number != 1 else og_y_offset
 
                 dimensions = get_dimensions_from_layers(child.get('layers', []))
-                width = dimensions.get('projected_width', 0) * self.scale_factor
+                width = dimensions.get('width', 0) * self.scale_factor
                 height = dimensions.get('height', 0) * self.scale_factor
 
                 # draw panel name
-                self.draw_text(self.x + x_offset + width / 2 - 16, self.y + 2 * TopView.ENFORCEMENT_SIZE,
+                self.draw_text(self.x + x_offset + width / 2 - 16,
+                               self.y + self.number_of_tracks * 2.5 * TopView.PANEL_HEIGHT,
                                f'Panel {child.get("name", "").upper()}')
 
                 # Draw the start enforcement square
-                self.context.rectangle(self.x + x_offset, self.y + y_offset - 1, TopView.ENFORCEMENT_SIZE,
+                self.context.rectangle(self.x + x_offset, self.y + y_offset - 2, TopView.ENFORCEMENT_SIZE,
                                        TopView.ENFORCEMENT_SIZE)
 
                 # Draw the panel
-                self.context.rectangle(self.x + x_offset + TopView.ENFORCEMENT_SIZE, self.y + y_offset + 1.5,
+                self.context.rectangle(self.x + x_offset + TopView.ENFORCEMENT_SIZE, self.y + y_offset + 1,
                                        width - 2 * TopView.ENFORCEMENT_SIZE, TopView.PANEL_HEIGHT)
 
                 # Draw the end enforcement square
-                self.context.rectangle(self.x + x_offset + width - TopView.ENFORCEMENT_SIZE, self.y + y_offset - 1,
+                self.context.rectangle(self.x + x_offset + width - TopView.ENFORCEMENT_SIZE, self.y + y_offset - 2,
                                        TopView.ENFORCEMENT_SIZE, TopView.ENFORCEMENT_SIZE)
                 self.context.stroke()
 
@@ -193,13 +194,13 @@ class TopView:
 
             # draw exterior and interior
             text_start_x = (panel_min_x + panel_max_x) / 2 - 18
-            self.draw_text(text_start_x, track_y + 3 * TopView.ENFORCEMENT_SIZE, 'INTERIOR')
-            self.draw_text(text_start_x, track_y - self.number_of_tracks * TopView.ENFORCEMENT_SIZE - 5, 'EXTERIOR')
+            self.draw_text(text_start_x, self.y + self.number_of_tracks * 2.5 * TopView.PANEL_HEIGHT + 20, 'INTERIOR')
+            self.draw_text(text_start_x, self.y - 15, 'EXTERIOR')
 
             # draw track extremes
             for track_index in range(self.number_of_tracks):
                 # write track number
-                self.draw_text(panel_min_x - 40, track_y + 7.5, f'Track {track_index + 1}')
+                self.draw_text(panel_min_x - 45, track_y + 7.5, f'Track {self.number_of_tracks - track_index}')
 
                 self.context.move_to(panel_min_x + TopView.TRACK_WRAP_THICKNESS, track_y)
                 self.context.line_to(panel_min_x, track_y)
@@ -213,6 +214,6 @@ class TopView:
 
                 self.context.stroke()
 
-                track_y = track_y - 1.25 * TopView.ENFORCEMENT_SIZE - 1
+                track_y = track_y + 1.25 * TopView.ENFORCEMENT_SIZE + 1
 
         self.context.restore()

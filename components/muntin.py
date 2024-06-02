@@ -1,3 +1,4 @@
+from components.muntin_label import MuntinLabel
 from enums.colors import Colors
 
 
@@ -6,11 +7,57 @@ class Muntin:
     def __init__(self, panel_object):
         self.panel_object = panel_object
 
+    def validate_muntin_x(self, x):
+        """
+        Args: x - int - x co-ordinate of a point
+
+        Function checks if the x falls in between minx and max x of dlo; if not clamp it to min or max
+        """
+        if x < self.dlo_min_x:
+            x = self.dlo_min_x
+        elif x > self.dlo_max_x:
+            x = self.dlo_max_x
+
+        return x
+
+    def validate_muntin_y(self, y):
+        """
+        Args: y - int - y co-ordinate of a point
+
+        Function checks if the y falls in between min_y and max_y of dlo; if not clamp it to min or max
+        """
+        if y < self.dlo_min_y:
+            y = self.dlo_min_y
+        elif y > self.dlo_max_y:
+            y = self.dlo_max_y
+
+        return y
+
+    def validate_muntin_points(self, points):
+        """
+        Args: points - ((x,y),(x1,y1)) - tuple of points to draw line bw
+
+        Function checks if the points falls in the dlo area (check for overflow)
+        and returns the updated points
+        """
+        x1, y1 = points[0][0], points[0][1]
+        x2, y2 = points[1][0], points[1][1]
+
+        x1 = self.validate_muntin_x(x1)
+        x2 = self.validate_muntin_x(x2)
+
+        y1 = self.validate_muntin_y(y1)
+        y2 = self.validate_muntin_y(y2)
+
+        return (x1, y1), (x2, y2)
+
     def draw_line(self, points, thickness=None):
         """
         Args: points - ((x,y),(x1,y1)) - tuple of points to draw line bw
 
         """
+        # checks and invalidates if there is any overflow wrt dlo area
+        points = self.validate_muntin_points(points)
 
         if thickness:
             # draw as a rectangle
@@ -27,6 +74,13 @@ class Muntin:
                 # its a horizontal line
                 height = width
                 width = abs(x2 - x1)
+
+            # modify width and height such that it won't overflow the dlo_area
+            if x + width > self.dlo_max_x:
+                width = self.dlo_max_x - x
+
+            if y + height > self.dlo_max_y:
+                height = self.dlo_max_y - y
 
             self.panel_object.context.rectangle(x, y, width, height)
             self.panel_object.context.fill()
@@ -82,6 +136,8 @@ class Muntin:
 
         self.dlo_min_x = x
         self.dlo_min_y = y
+        self.dlo_max_x = x + dlo_width
+        self.dlo_max_y = y + dlo_height
 
         b_offset = 0.10 * dlo_width
 
@@ -93,6 +149,26 @@ class Muntin:
 
             for part in self.panel_object.muntin_parts:
                 self.draw_muntin_part_from_placements(part, x, y)
+
+            # DRAW MUNTIN LABELS
+            if self.panel_object.draw_muntin_label:
+                # draw labels for vertical parts
+                vertical_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'vertical']
+
+                # a part can be placed at multiple points, gather each placement and keep it in ascending order
+                vertical_parts = self.__sort_muntin_parts(vertical_parts)
+                vertical_parts = self.__unique_position_parts(vertical_parts)
+
+                self.draw_muntin_labels(vertical_parts)
+
+                # horizontal parts
+                horizontal_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'horizontal']
+
+                # a part can be placed at multiple points, gather each placement and keep it in ascending order
+                horizontal_parts = self.__sort_muntin_parts(horizontal_parts)
+                horizontal_parts = self.__unique_position_parts(horizontal_parts)
+
+                self.draw_muntin_labels(horizontal_parts)
 
             context.restore()
             return
@@ -140,3 +216,52 @@ class Muntin:
             self.draw_line(((x, y + b_offset), (x + dlo_width, y + b_offset)))
 
         context.restore()
+
+    def draw_muntin_labels(self, parts):
+        previous_label = None
+        for index, part in enumerate(parts):
+            # Make a copy of previous_label
+            current_previous_label = previous_label
+            muntin_label = MuntinLabel(index, part, self, current_previous_label)
+            muntin_label.draw()
+
+            previous_label = muntin_label
+
+    @staticmethod
+    def __sort_muntin_parts(parts):
+        """
+            Sorts muntin parts according to positions, ascending from min to max
+        """
+        sorted_parts = []
+        for part in parts:
+            for position in part['placement_positions']:
+                new_item = part.copy()
+                new_item['placement_position'] = position
+                del new_item['placement_positions']
+                sorted_parts.append(new_item)
+
+        # Sort the new list based on the 'placement_position' key
+        sorted_parts.sort(
+            key=lambda x: x['placement_position'] if isinstance(x['placement_position'], (float, int)) else
+            x['placement_position'][0])
+
+        return sorted_parts
+
+    @staticmethod
+    def __unique_position_parts(parts):
+        """
+            Filters out parts which are serially places on a same x/y index
+
+            args: parts - list of parts
+        """
+        unique_positions = set()
+        unique_parts = []
+
+        for item in parts:
+            position = item['placement_position'] if isinstance(item['placement_position'], (float, int)) else \
+            item['placement_position'][0]
+            if position not in unique_positions:
+                unique_positions.add(position)
+                unique_parts.append(item)
+
+        return unique_parts

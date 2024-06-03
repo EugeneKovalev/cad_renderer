@@ -1,6 +1,9 @@
+import bottle
 from bottle import run, request, static_file, post
 
 from components.canvas import Canvas
+
+bottle.BaseRequest.MEMFILE_MAX = 16 * 1024 * 1024
 
 
 @post('/cad')

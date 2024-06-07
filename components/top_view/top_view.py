@@ -135,8 +135,11 @@ class TopView:
             og_y_offset = (self.scaled_frame_height - 5 * (
                     self.number_of_tracks - 1) - 1.5 * TopView.ENFORCEMENT_SIZE * self.number_of_tracks) / 2  # Initial y offset
 
+            # filter screens, normal panel will have z index as 1
+            filtered_panels = [panel for panel in frame['children'] if panel['position']['z'] == 1]
+
             # Sort the children according to position['x']
-            sorted_children = sorted(frame['children'], key=lambda x: x['position']['x'])
+            sorted_panels = sorted(filtered_panels, key=lambda x: x['position']['x'])
 
             self.context.set_line_width(1)
 
@@ -146,7 +149,7 @@ class TopView:
 
             prev_track_number = self.number_of_tracks
 
-            for panel_index, child in enumerate(sorted_children):
+            for panel_index, child in enumerate(sorted_panels):
                 if child.get('panel_type') != 'panel':
                     continue
 

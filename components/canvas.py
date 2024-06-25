@@ -325,7 +325,6 @@ class Canvas:
 
     def __draw_frame(self, context):
         from components.panel import Panel
-        print(self.raw_params)
 
         if self.draw_muntin_label and has_muntin_parts(self.raw_params):
             # the diagram min_x and min_y should be positioned to handle the extra width and height of canvas

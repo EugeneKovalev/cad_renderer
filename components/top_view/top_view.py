@@ -1,5 +1,6 @@
 import cairo
 
+from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.top_view.utils import get_dimensions_from_layers, get_frames_with_panels, get_number_of_tracks_value, \
     get_track_number_of_panel
 from enums.colors import Colors
@@ -34,6 +35,15 @@ class TopView:
             return number_of_tracks
         else:
             return 0
+
+    def is_frame_sliding_assembly(self, frame_tree):
+        assembly_version = frame_tree.get('assembly_version', {})
+        product_category_id = assembly_version.get('product_category_id')
+
+        if product_category_id == SLIDING_DOOR_PRODUCT_CATEGORY_ID:
+            return True
+        else:
+            return False
 
     @property
     def scaled_frame_height(self):
@@ -120,6 +130,10 @@ class TopView:
         frames = get_frames_with_panels(constructor_data)
 
         for frame in frames:
+
+            # skip if its not sliding glass door
+            if not self.is_frame_sliding_assembly(frame):
+                continue
 
             frame_dimension = get_dimensions_from_layers(frame.get("layers", {}))
             # draw frame
@@ -218,5 +232,6 @@ class TopView:
                 self.context.stroke()
 
                 track_y = track_y + 1.25 * TopView.ENFORCEMENT_SIZE + 1
+
 
         self.context.restore()

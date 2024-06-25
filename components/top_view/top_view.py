@@ -129,7 +129,7 @@ class TopView:
 
         frames = get_frames_with_panels(constructor_data)
 
-        for frame in frames[:1]:
+        for frame in frames:
 
             # skip if its not sliding glass door
             if not self.is_frame_sliding_assembly(frame):
@@ -233,5 +233,7 @@ class TopView:
 
                 track_y = track_y + 1.25 * TopView.ENFORCEMENT_SIZE + 1
 
+            #  draw only one frame
+            break
 
         self.context.restore()

@@ -129,7 +129,7 @@ class TopView:
 
         frames = get_frames_with_panels(constructor_data)
 
-        for frame in frames:
+        for frame in frames[:1]:
 
             # skip if its not sliding glass door
             if not self.is_frame_sliding_assembly(frame):

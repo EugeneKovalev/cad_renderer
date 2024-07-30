@@ -8,7 +8,7 @@ from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.helpers.arrow import Arrow
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
-from components.utils import get_panel_direction_from_tree
+from components.utils import get_panel_direction_from_tree, find_max_x_y_from_sides
 from enums.colors import Colors
 
 
@@ -109,6 +109,11 @@ class Panel:
         return self.raw_params.get('muntin_parts') or []
 
     @property
+    def assembly_sides(self):
+        panel_shape = self.raw_params.get('panel_shape', {})
+        return panel_shape.get('sides', [])
+
+    @property
     def draw_muntin_label(self):
         if self.parent_panel:
             return self.parent_panel.draw_muntin_label
@@ -193,12 +198,45 @@ class Panel:
         )
 
     def _draw_frame(self):
-        self.context.save()
 
+        if self.name == 'unit':
+            return
+
+        self.context.save()
         self.context.set_source_rgba(*Colors.BLACK)
-        self.context.set_line_width(2)
-        self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
-        self.context.stroke()
+
+        if self.name == 'opening':
+            self.context.set_line_width(1)
+        else:
+            self.context.set_line_width(2)
+
+        if self.assembly_sides:
+            max_x, max_y = find_max_x_y_from_sides(self.assembly_sides)
+
+            # Iterate over the sides and draw each line
+            for side in self.assembly_sides:
+                start_point = side['start_point']
+                end_point = side['end_point']
+
+                # Scale the points
+                scaled_start_point = [coord * self.scale_factor for coord in start_point]
+                scaled_end_point = [coord * self.scale_factor for coord in end_point]
+
+                y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+
+                y_offset = 0 if y_offset < 0 else y_offset
+                x_offset = 0 if x_offset < 0 else x_offset
+
+                # Move to the start point and draw a line to the end point
+                self.context.move_to(self.x - x_offset + scaled_start_point[0],
+                                     self.y - y_offset + scaled_start_point[1])
+                self.context.line_to(self.x - x_offset + scaled_end_point[0], self.y - y_offset + scaled_end_point[1])
+
+                self.context.stroke()
+        else:
+            self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
+            self.context.stroke()
 
         if self.raw_params.get('has_louver'):
             self.context.set_line_width(5)
@@ -219,7 +257,33 @@ class Panel:
         self.context.set_source_rgba(*Colors.BLACK)
         self.context.set_line_width(1)
 
-        self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
+        if self.assembly_sides:
+
+            max_x, max_y = find_max_x_y_from_sides(self.assembly_sides)
+
+            # Iterate over the sides and draw each line
+            for side in self.assembly_sides:
+                start_point = side['start_point']
+                end_point = side['end_point']
+
+                # Scale the points
+                scaled_start_point = [coord * self.scale_factor for coord in start_point]
+                scaled_end_point = [coord * self.scale_factor for coord in end_point]
+
+                y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+
+                y_offset = 0 if y_offset < 0 else y_offset
+                x_offset = 0 if x_offset < 0 else x_offset
+
+                # Move to the start point and draw a line to the end point
+                self.context.move_to(self.x - x_offset + scaled_start_point[0],
+                                     self.y - y_offset + scaled_start_point[1])
+                self.context.line_to(self.x - x_offset + scaled_end_point[0], self.y - y_offset + scaled_end_point[1])
+
+                self.context.stroke()
+        else:
+            self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
 
         self.context.stroke()
 
@@ -517,7 +581,8 @@ class Panel:
             self._draw_frame()
         elif self.panel_type == 'panel':
             self._draw_panel()
-            self._draw_panel_dlo()
+            if not self.assembly_sides:
+                self._draw_panel_dlo()
 
         if not self.parent_panel:
             for child_panel in self.child_panels:

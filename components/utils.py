@@ -143,3 +143,17 @@ def get_panel_direction_from_tree(tree, panel_name):
                     return direction
 
     return None
+
+def find_max_x_y_from_sides(sides):
+    max_x = float('-inf')
+    max_y = float('-inf')
+
+    for side in sides:
+        points = [side['start_point'], side['end_point']]
+        for x, y in points:
+            if x > max_x:
+                max_x = x
+            if y > max_y:
+                max_y = y
+
+    return max_x, max_y

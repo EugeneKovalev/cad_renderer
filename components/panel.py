@@ -206,6 +206,7 @@ class Panel:
         self.context.set_source_rgba(*Colors.BLACK)
 
         if self.name == 'opening':
+            self.context.set_dash([3, 3])
             self.context.set_line_width(1)
         else:
             self.context.set_line_width(2)

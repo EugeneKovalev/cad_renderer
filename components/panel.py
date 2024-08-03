@@ -8,7 +8,7 @@ from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.helpers.arrow import Arrow
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
-from components.utils import get_panel_direction_from_tree, find_max_x_y_from_sides
+from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences
 from enums.colors import Colors
 
 
@@ -212,7 +212,7 @@ class Panel:
             self.context.set_line_width(2)
 
         if self.assembly_sides:
-            max_x, max_y = find_max_x_y_from_sides(self.assembly_sides)
+            # max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
 
             # Iterate over the sides and draw each line
             for side in self.assembly_sides:
@@ -223,11 +223,14 @@ class Panel:
                 scaled_start_point = [coord * self.scale_factor for coord in start_point]
                 scaled_end_point = [coord * self.scale_factor for coord in end_point]
 
-                y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
-                x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+                # y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                # x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+                #
+                # y_offset = 0 if y_offset < 0 else y_offset
+                # x_offset = 0 if x_offset < 0 else x_offset
 
-                y_offset = 0 if y_offset < 0 else y_offset
-                x_offset = 0 if x_offset < 0 else x_offset
+                x_offset = 0
+                y_offset = 0
 
                 # Move to the start point and draw a line to the end point
                 self.context.move_to(self.x - x_offset + scaled_start_point[0],
@@ -260,7 +263,7 @@ class Panel:
 
         if self.assembly_sides:
 
-            max_x, max_y = find_max_x_y_from_sides(self.assembly_sides)
+            max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
 
             # Iterate over the sides and draw each line
             for side in self.assembly_sides:
@@ -271,16 +274,22 @@ class Panel:
                 scaled_start_point = [coord * self.scale_factor for coord in start_point]
                 scaled_end_point = [coord * self.scale_factor for coord in end_point]
 
-                y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
-                x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+                if self.parent_panel:
+                    x = self.parent_panel.x
+                    y = self.parent_panel.y
+                else:
+                    y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                    x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
 
-                y_offset = 0 if y_offset < 0 else y_offset
-                x_offset = 0 if x_offset < 0 else x_offset
+                    y_offset = 0 if y_offset < 0 else y_offset
+                    x_offset = 0 if x_offset < 0 else x_offset
+
+                    x = self.x - x_offset
+                    y = self.y - y_offset
 
                 # Move to the start point and draw a line to the end point
-                self.context.move_to(self.x - x_offset + scaled_start_point[0],
-                                     self.y - y_offset + scaled_start_point[1])
-                self.context.line_to(self.x - x_offset + scaled_end_point[0], self.y - y_offset + scaled_end_point[1])
+                self.context.move_to(x + scaled_start_point[0], y + scaled_start_point[1])
+                self.context.line_to(x + scaled_end_point[0], y + scaled_end_point[1])
 
                 self.context.stroke()
         else:

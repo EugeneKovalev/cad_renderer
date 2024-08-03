@@ -1,5 +1,7 @@
 import math
+
 from components.config import PANEL_DIRECTION_PARAM_NAME
+
 
 def find_asin(value):
     """
@@ -144,9 +146,12 @@ def get_panel_direction_from_tree(tree, panel_name):
 
     return None
 
-def find_max_x_y_from_sides(sides):
+
+def find_shape_max_min_differences(sides):
     max_x = float('-inf')
     max_y = float('-inf')
+    min_x = float('inf')
+    min_y = float('inf')
 
     for side in sides:
         points = [side['start_point'], side['end_point']]
@@ -155,5 +160,9 @@ def find_max_x_y_from_sides(sides):
                 max_x = x
             if y > max_y:
                 max_y = y
+            if x < min_x:
+                min_x = x
+            if y < min_y:
+                min_y = y
 
-    return max_x, max_y
+    return max_x - min_x, max_y - min_y

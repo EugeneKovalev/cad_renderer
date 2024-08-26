@@ -166,3 +166,10 @@ def find_shape_max_min_differences(sides):
                 min_y = y
 
     return max_x - min_x, max_y - min_y
+
+def scale_point(point, scale_factor):
+    """
+    point: [x,y]
+    scale_factor: int
+    """
+    return [coord * scale_factor for coord in point]

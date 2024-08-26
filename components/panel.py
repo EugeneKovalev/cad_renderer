@@ -8,7 +8,7 @@ from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.helpers.arrow import Arrow
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
-from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences
+from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point
 from enums.colors import Colors
 
 
@@ -110,8 +110,7 @@ class Panel:
 
     @property
     def assembly_sides(self):
-        panel_shape = self.raw_params.get('panel_shape', {})
-        return panel_shape.get('sides', [])
+        return self.raw_params.get('panel_shape', [])
 
     @property
     def draw_muntin_label(self):
@@ -216,28 +215,50 @@ class Panel:
 
             # Iterate over the sides and draw each line
             for side in self.assembly_sides:
-                start_point = side['start_point']
-                end_point = side['end_point']
 
-                # Scale the points
-                scaled_start_point = [coord * self.scale_factor for coord in start_point]
-                scaled_end_point = [coord * self.scale_factor for coord in end_point]
+                outer_points = side.get('segments', {}).get('outer_points', [])
 
-                # y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
-                # x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
-                #
-                # y_offset = 0 if y_offset < 0 else y_offset
-                # x_offset = 0 if x_offset < 0 else x_offset
+                if outer_points:
+                    for segment in outer_points:
+                        p1 = scale_point(segment['p1'], self.scale_factor)
+                        p2 = scale_point(segment['p2'], self.scale_factor)
+                        b1 = scale_point(segment['b1'], self.scale_factor)
+                        b2 = scale_point(segment['b2'], self.scale_factor)
 
-                x_offset = 0
-                y_offset = 0
+                        # Move to the start point
+                        self.context.move_to(self.x + p1[0], self.y + p1[1])
 
-                # Move to the start point and draw a line to the end point
-                self.context.move_to(self.x - x_offset + scaled_start_point[0],
-                                     self.y - y_offset + scaled_start_point[1])
-                self.context.line_to(self.x - x_offset + scaled_end_point[0], self.y - y_offset + scaled_end_point[1])
+                        # Draw the Bezier curve
+                        self.context.curve_to(self.x + b1[0], self.y + b1[1], self.x + b2[0], self.y + b2[1],
+                                              self.x + p2[0], self.y + p2[1])
+                        self.context.stroke()
 
-                self.context.stroke()
+
+                else:
+
+                    start_point = side['start_point']
+                    end_point = side['end_point']
+
+                    # Scale the points
+                    scaled_start_point = [coord * self.scale_factor for coord in start_point]
+                    scaled_end_point = [coord * self.scale_factor for coord in end_point]
+
+                    # y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                    # x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+                    #
+                    # y_offset = 0 if y_offset < 0 else y_offset
+                    # x_offset = 0 if x_offset < 0 else x_offset
+
+                    x_offset = 0
+                    y_offset = 0
+
+                    # Move to the start point and draw a line to the end point
+                    self.context.move_to(self.x - x_offset + scaled_start_point[0],
+                                         self.y - y_offset + scaled_start_point[1])
+                    self.context.line_to(self.x - x_offset + scaled_end_point[0],
+                                         self.y - y_offset + scaled_end_point[1])
+
+                    self.context.stroke()
         else:
             self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
             self.context.stroke()
@@ -267,31 +288,49 @@ class Panel:
 
             # Iterate over the sides and draw each line
             for side in self.assembly_sides:
-                start_point = side['start_point']
-                end_point = side['end_point']
 
-                # Scale the points
-                scaled_start_point = [coord * self.scale_factor for coord in start_point]
-                scaled_end_point = [coord * self.scale_factor for coord in end_point]
+                outer_points = side.get('segments', {}).get('outer_points', [])
 
-                if self.parent_panel:
-                    x = self.parent_panel.x
-                    y = self.parent_panel.y
+                if outer_points:
+                    for segment in outer_points:
+                        p1 = scale_point(segment['p1'], self.scale_factor)
+                        p2 = scale_point(segment['p2'], self.scale_factor)
+                        b1 = scale_point(segment['b1'], self.scale_factor)
+                        b2 = scale_point(segment['b2'], self.scale_factor)
+
+                        # Move to the start point
+                        self.context.move_to(self.x + p1[0], self.y + p1[1])
+
+                        # Draw the Bezier curve
+                        self.context.curve_to(self.x + b1[0], self.y + b1[1], self.x + b2[0], self.y + b2[1],
+                                              self.x + p2[0], self.y + p2[1])
+                        self.context.stroke()
                 else:
-                    y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
-                    x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
+                    start_point = side['start_point']
+                    end_point = side['end_point']
 
-                    y_offset = 0 if y_offset < 0 else y_offset
-                    x_offset = 0 if x_offset < 0 else x_offset
+                    # Scale the points
+                    scaled_start_point = [coord * self.scale_factor for coord in start_point]
+                    scaled_end_point = [coord * self.scale_factor for coord in end_point]
 
-                    x = self.x - x_offset
-                    y = self.y - y_offset
+                    if self.parent_panel:
+                        x = self.parent_panel.x
+                        y = self.parent_panel.y
+                    else:
+                        y_offset = (max_y * self.scale_factor - self.scaled_height) / 2
+                        x_offset = (max_x * self.scale_factor - self.scaled_width) / 2
 
-                # Move to the start point and draw a line to the end point
-                self.context.move_to(x + scaled_start_point[0], y + scaled_start_point[1])
-                self.context.line_to(x + scaled_end_point[0], y + scaled_end_point[1])
+                        y_offset = 0 if y_offset < 0 else y_offset
+                        x_offset = 0 if x_offset < 0 else x_offset
 
-                self.context.stroke()
+                        x = self.x - x_offset
+                        y = self.y - y_offset
+
+                    # Move to the start point and draw a line to the end point
+                    self.context.move_to(x + scaled_start_point[0], y + scaled_start_point[1])
+                    self.context.line_to(x + scaled_end_point[0], y + scaled_end_point[1])
+
+                    self.context.stroke()
         else:
             self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
 

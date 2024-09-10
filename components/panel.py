@@ -110,7 +110,8 @@ class Panel:
 
     @property
     def assembly_sides(self):
-        return []
+        if not isinstance(self.raw_params.get('panel_shape', []), list):
+            return []
         return self.raw_params.get('panel_shape', [])
 
     @property

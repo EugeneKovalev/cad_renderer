@@ -284,16 +284,14 @@ class Panel:
 
         if self.assembly_sides:
 
+            max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
+
             # Iterate over the sides and draw each line
             for side in self.assembly_sides:
 
                 outer_points = side.get('segments', {}).get('outer_points', [])
 
                 if outer_points:
-                    if self.parent_panel:
-                        x = self.parent_panel.x
-                        y = self.parent_panel.y
-
                     for segment in outer_points:
                         p1 = scale_point(segment['p1'], self.scale_factor)
                         p2 = scale_point(segment['p2'], self.scale_factor)
@@ -301,15 +299,13 @@ class Panel:
                         b2 = scale_point(segment['b2'], self.scale_factor)
 
                         # Move to the start point
-                        self.context.move_to(x + p1[0], y + p1[1])
+                        self.context.move_to(self.x + p1[0], self.y + p1[1])
 
                         # Draw the Bezier curve
-                        self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
-                                              x + p2[0], y + p2[1])
+                        self.context.curve_to(self.x + b1[0], self.y + b1[1], self.x + b2[0], self.y + b2[1],
+                                              self.x + p2[0], self.y + p2[1])
                         self.context.stroke()
                 else:
-                    max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
-
                     start_point = side['start_point']
                     end_point = side['end_point']
 

@@ -309,6 +309,31 @@ class Panel:
                         self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
                                               x + p2[0], y + p2[1])
                         self.context.stroke()
+
+                    # DRAW DLO
+                    inner_points = side.get('segments', {}).get('inner_points', [])
+                    self.context.set_dash([3, 3])
+                    self.context.set_line_width(1)
+
+                    if self.parent_panel:
+                        x = self.parent_panel.x
+                        y = self.parent_panel.y
+
+                    for segment in inner_points:
+                        p1 = scale_point(segment['p1'], self.scale_factor)
+                        p2 = scale_point(segment['p2'], self.scale_factor)
+                        b1 = scale_point(segment['b1'], self.scale_factor)
+                        b2 = scale_point(segment['b2'], self.scale_factor)
+
+                        # Move to the start point
+                        self.context.move_to(x + p1[0], y + p1[1])
+
+                        # Draw the Bezier curve
+                        self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
+                                              x + p2[0], y + p2[1])
+                        self.context.stroke()
+
+                    self.context.set_dash([])
                 else:
                     max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
 

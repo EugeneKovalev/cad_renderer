@@ -6,6 +6,7 @@ import cairo
 
 from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.helpers.arrow import Arrow
+from components.helpers.bezier import offset_bezier_curve
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
 from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point
@@ -110,9 +111,13 @@ class Panel:
 
     @property
     def assembly_sides(self):
-        if not isinstance(self.raw_params.get('panel_shape', []), list):
+        try:
+            if not isinstance(self.raw_params.get('panel_shape', {}), dict):
+                return []
+            return self.raw_params.get('panel_shape', {}).get('sides', [])
+        except:
+            # return empty list if there is any unexpected structure for shape
             return []
-        return self.raw_params.get('panel_shape', [])
 
     @property
     def draw_muntin_label(self):
@@ -197,6 +202,102 @@ class Panel:
             frame_height=self.height,
             raw_child_panels=self.raw_child_panels
         )
+
+    def _draw_panel_beziers(self, outer_points, inner_points):
+        if self.parent_panel:
+            x = self.parent_panel.x
+            y = self.parent_panel.y
+        else:
+            return
+
+        for segment in outer_points:
+            if segment.get('offset_value', None):
+                offset_points = offset_bezier_curve(segment, segment.get('offset_value', 0),
+                                                    segment.get('sample_points', 1000))
+                intersection_indices = segment['intersection_indices']
+                intersection_points = segment['intersection_points']
+
+                offset_points = offset_points[min(intersection_indices):max(intersection_indices) + 1]
+
+                self.context.move_to(x + self.scale_factor * offset_points[0][0],
+                                     y + self.scale_factor * offset_points[0][1])
+
+                try:
+                    first_intersection = intersection_points[intersection_indices.index(min(intersection_indices))]
+                    last_intersection = intersection_points[intersection_indices.index(max(intersection_indices))]
+
+                    self.context.line_to(x + self.scale_factor * first_intersection[0],
+                                         y + self.scale_factor * first_intersection[1])
+                except:
+                    pass
+
+                # Draw lines connecting the offset Bézier points
+                for point in offset_points[1:]:
+                    self.context.line_to(x + self.scale_factor * point[0], y + self.scale_factor * point[1])
+
+                try:
+                    self.context.line_to(x + self.scale_factor * last_intersection[0],
+                                         y + self.scale_factor * last_intersection[1])
+                except:
+                    pass
+
+                # Stroke the path (draw the lines)
+                self.context.stroke()
+
+            else:
+                p1 = scale_point(segment['p1'], self.scale_factor)
+                p2 = scale_point(segment['p2'], self.scale_factor)
+                b1 = scale_point(segment['b1'], self.scale_factor)
+                b2 = scale_point(segment['b2'], self.scale_factor)
+
+                # Move to the start point
+                self.context.move_to(x + p1[0], y + p1[1])
+
+                # Draw the Bezier curve
+                self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
+                                      x + p2[0], y + p2[1])
+                self.context.stroke()
+
+        # DRAW DLO
+        self.context.set_dash([3, 3])
+        self.context.set_line_width(1)
+
+        if self.parent_panel:
+            x = self.parent_panel.x
+            y = self.parent_panel.y
+
+        for segment in inner_points:
+
+            if segment.get('offset_value', None):
+                offset_points = offset_bezier_curve(segment, segment.get('offset_value', 0),
+                                                    segment.get('sample_points', 1000))
+                intersection_indices = segment['intersection_indices']
+
+                offset_points = offset_points[min(intersection_indices):max(intersection_indices) + 1]
+
+                self.context.move_to(x + self.scale_factor * offset_points[0][0],
+                                     y + self.scale_factor * offset_points[0][1])
+
+                # Draw lines connecting the offset Bézier points
+                for point in offset_points[1:]:
+                    self.context.line_to(x + self.scale_factor * point[0], y + self.scale_factor * point[1])
+
+                # Stroke the path (draw the lines)
+                self.context.stroke()
+            p1 = scale_point(segment['p1'], self.scale_factor)
+            p2 = scale_point(segment['p2'], self.scale_factor)
+            b1 = scale_point(segment['b1'], self.scale_factor)
+            b2 = scale_point(segment['b2'], self.scale_factor)
+
+            # Move to the start point
+            self.context.move_to(x + p1[0], y + p1[1])
+
+            # Draw the Bezier curve
+            self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
+                                  x + p2[0], y + p2[1])
+            self.context.stroke()
+
+        self.context.set_dash([])
 
     def _draw_frame(self):
 
@@ -292,49 +393,19 @@ class Panel:
                 outer_points = side.get('segments', {}).get('outer_points', [])
 
                 if outer_points:
-                    if self.parent_panel:
-                        x = self.parent_panel.x
-                        y = self.parent_panel.y
-
-                    for segment in outer_points:
-                        p1 = scale_point(segment['p1'], self.scale_factor)
-                        p2 = scale_point(segment['p2'], self.scale_factor)
-                        b1 = scale_point(segment['b1'], self.scale_factor)
-                        b2 = scale_point(segment['b2'], self.scale_factor)
-
-                        # Move to the start point
-                        self.context.move_to(x + p1[0], y + p1[1])
-
-                        # Draw the Bezier curve
-                        self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
-                                              x + p2[0], y + p2[1])
-                        self.context.stroke()
-
-                    # DRAW DLO
                     inner_points = side.get('segments', {}).get('inner_points', [])
-                    self.context.set_dash([3, 3])
-                    self.context.set_line_width(1)
+                    try:
+                        if outer_points:
+                            self._draw_panel_beziers(outer_points, inner_points)
+                    except Exception as e:
+                        print('Encountered error while drawing bezier panel curves')
+                        print(e)
 
-                    if self.parent_panel:
-                        x = self.parent_panel.x
-                        y = self.parent_panel.y
-
-                    for segment in inner_points:
-                        p1 = scale_point(segment['p1'], self.scale_factor)
-                        p2 = scale_point(segment['p2'], self.scale_factor)
-                        b1 = scale_point(segment['b1'], self.scale_factor)
-                        b2 = scale_point(segment['b2'], self.scale_factor)
-
-                        # Move to the start point
-                        self.context.move_to(x + p1[0], y + p1[1])
-
-                        # Draw the Bezier curve
-                        self.context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
-                                              x + p2[0], y + p2[1])
-                        self.context.stroke()
-
-                    self.context.set_dash([])
                 else:
+
+                    if not side.get('start_point', None):
+                        return
+
                     max_x, max_y = find_shape_max_min_differences(self.assembly_sides)
 
                     start_point = side['start_point']

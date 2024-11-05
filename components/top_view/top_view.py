@@ -1,8 +1,10 @@
+from functools import cached_property
+
 import cairo
 
 from components.config import SLIDING_DOOR_PRODUCT_CATEGORY_ID
 from components.top_view.utils import get_dimensions_from_layers, get_frames_with_panels, get_number_of_tracks_value, \
-    get_track_number_of_panel
+    get_track_number_of_panel, get_frame_category, get_pocket_width, get_pocket_location
 from enums.colors import Colors
 
 
@@ -28,13 +30,34 @@ class TopView:
         self._size_labels = []
         self.child_labels = []
 
-    @property
+    @cached_property
     def number_of_tracks(self):
         number_of_tracks = get_number_of_tracks_value(self.raw_params.get('constructor_data', {}))
         if number_of_tracks:
             return number_of_tracks
         else:
             return 0
+
+    @cached_property
+    def frame_category(self):
+        frame_category = get_frame_category(self.raw_params.get('constructor_data', {}))
+        if frame_category:
+            return frame_category.lower()
+        else:
+            return ''
+
+    @cached_property
+    def pocket_location(self):
+        pocket_location = get_pocket_location(self.raw_params.get('constructor_data', {}))
+        if pocket_location:
+            return pocket_location.lower()
+        else:
+            return ''
+
+    @cached_property
+    def pocket_width(self):
+        pocket_width = get_pocket_width(self.raw_params.get('constructor_data', {}))
+        return pocket_width
 
     def is_frame_sliding_assembly(self, frame_tree):
         assembly_version = frame_tree.get('assembly_version', {})
@@ -116,6 +139,10 @@ class TopView:
     def draw(self):
 
         self.context.save()
+
+        # add gap for pocket first
+        if self.frame_category.startswith('pck'):
+            self.x = self.x + self.pocket_width * self.scale_factor + 10
 
         self.y = self.y + (self.number_of_tracks - 1) * TopView.ENFORCEMENT_SIZE
 
@@ -212,28 +239,121 @@ class TopView:
             # draw exterior and interior
             text_start_x = (panel_min_x + panel_max_x) / 2 - 18
             self.draw_text(text_start_x, self.y + self.number_of_tracks * 2.5 * TopView.PANEL_HEIGHT + 20, 'INTERIOR')
-            self.draw_text(text_start_x, self.y - 15, 'EXTERIOR')
+            self.draw_text(text_start_x, self.y - 20, 'EXTERIOR')
 
             # draw track extremes
+            first_track_y = None
+            last_track_y = track_y
             for track_index in range(self.number_of_tracks):
                 # write track number
-                self.draw_text(panel_min_x - 45, track_y + 7.5, f'Track {self.number_of_tracks - track_index}')
+                if not self.frame_category.startswith('pck') and not self.frame_category.endswith('pck'):
+                    self.draw_text(panel_min_x - 45, track_y + 7.5, f'Track {self.number_of_tracks - track_index}')
 
-                self.context.move_to(panel_min_x + TopView.TRACK_WRAP_THICKNESS, track_y)
-                self.context.line_to(panel_min_x, track_y)
-                self.context.line_to(panel_min_x, track_y + 2 * TopView.PANEL_HEIGHT + 1)
-                self.context.line_to(panel_min_x + TopView.TRACK_WRAP_THICKNESS, track_y + 2 * TopView.PANEL_HEIGHT + 1)
+                if not self.frame_category.startswith('pck'):
+                    self.context.move_to(panel_min_x + TopView.TRACK_WRAP_THICKNESS, track_y)
+                    self.context.line_to(panel_min_x, track_y)
+                    self.context.line_to(panel_min_x, track_y + 2 * TopView.PANEL_HEIGHT + 1)
+                    self.context.line_to(panel_min_x + TopView.TRACK_WRAP_THICKNESS,
+                                         track_y + 2 * TopView.PANEL_HEIGHT + 1)
 
-                self.context.move_to(panel_max_x - TopView.TRACK_WRAP_THICKNESS, track_y)
-                self.context.line_to(panel_max_x, track_y)
-                self.context.line_to(panel_max_x, track_y + 2 * TopView.PANEL_HEIGHT + 1)
-                self.context.line_to(panel_max_x - TopView.TRACK_WRAP_THICKNESS, track_y + 2 * TopView.PANEL_HEIGHT + 1)
+                if not self.frame_category.endswith('pck'):
+                    self.context.move_to(panel_max_x - TopView.TRACK_WRAP_THICKNESS, track_y)
+                    self.context.line_to(panel_max_x, track_y)
+                    self.context.line_to(panel_max_x, track_y + 2 * TopView.PANEL_HEIGHT + 1)
+                    self.context.line_to(panel_max_x - TopView.TRACK_WRAP_THICKNESS,
+                                         track_y + 2 * TopView.PANEL_HEIGHT + 1)
 
                 self.context.stroke()
 
+                first_track_y = track_y
                 track_y = track_y + 1.25 * TopView.ENFORCEMENT_SIZE + 1
 
-            #  draw only one frame
+            # draw pocket on right side 'STD-PCK' or 'PCK-PCK'
+            if self.frame_category.endswith('pck') and first_track_y:
+                rect_x = panel_max_x
+                # if pocket location is exterior, draw inside above first track else below last track
+                if self.pocket_location == 'out':
+                    rect_y = first_track_y + 2 * TopView.PANEL_HEIGHT
+                else:
+                    rect_y = last_track_y - 2 * TopView.PANEL_HEIGHT
+
+                rect_width, rect_height = int(
+                    self.pocket_width) * self.scale_factor, 2 * TopView.PANEL_HEIGHT  # Rectangle size
+
+                self.draw_text(panel_max_x + rect_width / 2 - 20,
+                               self.y + self.number_of_tracks * 2.5 * TopView.PANEL_HEIGHT + 20,
+                               'POCKET')
+
+                self.draw_pocket(rect_x, rect_y, rect_width, rect_height)
+
+                # draw inner part
+                self.context.set_line_width(2)
+                if self.pocket_location == 'out':
+                    inner_part_y = rect_y
+                else:
+                    inner_part_y = rect_y - 0.75 * TopView.PANEL_HEIGHT
+                self.context.rectangle(rect_x - TopView.TRACK_WRAP_THICKNESS, inner_part_y,
+                                       TopView.TRACK_WRAP_THICKNESS, 2.75 * TopView.PANEL_HEIGHT)
+                self.context.stroke()
+
+            # draw pocket on left side 'PCK-PCK' or 'PCK-STD'
+            if self.frame_category.startswith('pck') and first_track_y:
+                # if pocket location is exterior, draw inside above first track else below last track
+                if self.pocket_location == 'out':
+                    rect_y = first_track_y + 2 * TopView.PANEL_HEIGHT
+                else:
+                    rect_y = last_track_y - 2 * TopView.PANEL_HEIGHT
+
+                rect_width, rect_height = int(
+                    self.pocket_width) * self.scale_factor, 2 * TopView.PANEL_HEIGHT  # Rectangle size
+
+                rect_x = panel_min_x - rect_width
+
+                self.draw_text(rect_x + rect_width / 2 - 20,
+                               self.y + self.number_of_tracks * 2.5 * TopView.PANEL_HEIGHT + 20,
+                               'POCKET')
+
+                self.draw_pocket(rect_x, rect_y, rect_width, rect_height)
+
+                # draw inner part
+                self.context.set_line_width(2)
+                if self.pocket_location == 'out':
+                    inner_part_y = rect_y
+                else:
+                    inner_part_y = rect_y - 0.75 * TopView.PANEL_HEIGHT
+                self.context.rectangle(rect_x + rect_width, inner_part_y,
+                                       TopView.TRACK_WRAP_THICKNESS, 2.75 * TopView.PANEL_HEIGHT)
+                self.context.stroke()
+
+            # draw only one frame
             break
 
         self.context.restore()
+
+    def draw_pocket(self, rect_x, rect_y, rect_width, rect_height):
+        """
+        Draw pocket with tilted lines inside it
+        """
+
+        self.context.rectangle(rect_x, rect_y, rect_width, rect_height)
+
+        # Set the rectangle border color and fill
+        self.context.set_line_width(1)
+        self.context.stroke()
+
+        # Apply the rectangle as a clipping region
+        self.context.rectangle(rect_x, rect_y, rect_width, rect_height)
+        self.context.clip()
+
+        # Set shading line properties
+        self.context.set_source_rgb(0.3, 0.3, 0.3)  # Gray color for shading
+
+        # Draw tilted (diagonal) lines inside the rectangle
+        spacing = 5  # Space between each line
+        for offset in range(0, rect_width + rect_height, spacing):
+            self.context.move_to(rect_x + offset, rect_y)
+            self.context.line_to(rect_x, rect_y + offset)
+            self.context.stroke()
+
+        self.context.reset_clip()
+        self.context.set_source_rgb(0, 0, 0)  # Gray color for shading

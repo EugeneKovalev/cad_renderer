@@ -16,7 +16,7 @@ from components.shapes.tombstone import Tombstone
 from components.shapes.trapezoid import Trapezoid
 from components.shapes.triangle import Triangle
 from components.top_view.top_view import TopView
-from components.top_view.utils import get_number_of_tracks_value
+from components.top_view.utils import get_number_of_tracks_value, get_frame_category, get_pocket_width
 from components.utils import has_muntin_parts, find_muntin_label_offset_multipliers
 from enums.colors import Colors
 
@@ -144,6 +144,19 @@ class Canvas:
             return number_of_tracks
         else:
             return 0
+
+    @cached_property
+    def frame_category(self):
+        frame_category = get_frame_category(self.raw_params.get('constructor_data', {}))
+        if frame_category:
+            return frame_category.lower()
+        else:
+            return ''
+
+    @cached_property
+    def pocket_width(self):
+        pocket_width = get_pocket_width(self.raw_params.get('constructor_data', {}))
+        return pocket_width
 
     @cached_property
     def muntin_labels_count_x(self):
@@ -286,6 +299,15 @@ class Canvas:
 
     @cached_property
     def canvas_width(self):
+        if self.is_top_view:
+            extra_width = 0
+            if self.frame_category.startswith('pck'):
+                extra_width += self.pocket_width * self.scale_factor + 20
+
+            if self.frame_category.endswith('pck'):
+                extra_width += self.pocket_width * self.scale_factor + 20
+            return extra_width + self.scaled_framed_width_with_labels + self.BORDER_LEFT_OFFSET + self.BORDER_RIGHT_OFFSET
+
         return self.scaled_framed_width_with_labels + self.BORDER_LEFT_OFFSET + self.BORDER_RIGHT_OFFSET
 
     @cached_property

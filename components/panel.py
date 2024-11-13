@@ -1,6 +1,7 @@
 import itertools
 import math
 from copy import deepcopy
+from functools import cached_property
 
 import cairo
 
@@ -9,6 +10,7 @@ from components.helpers.arrow import Arrow
 from components.helpers.bezier import offset_bezier_curve
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
+from components.top_view.utils import get_pull_type, get_pull_handle_location
 from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point
 from enums.colors import Colors
 
@@ -91,9 +93,31 @@ class Panel:
 
         return self.raw_params.get('constructor_data', {})
 
-    @property
+    @cached_property
     def panel_direction(self):
         return get_panel_direction_from_tree(self.constructor_data, self.name)
+
+    @cached_property
+    def pull_handle_size(self):
+        pull_type = get_pull_type(self.constructor_data)
+        if not pull_type:
+            return ''
+        elif pull_type.endswith('24"'):
+            return 24
+        elif pull_type.endswith('60"'):
+            return 60
+        elif pull_type.endswith('84"'):
+            return 84
+        else:
+            return ''
+
+    @cached_property
+    def pull_handle_location(self):
+        pull_handle_location = get_pull_handle_location(self.constructor_data)
+        if pull_handle_location:
+            return pull_handle_location.lower()
+        else:
+            return None
 
     @property
     def is_sliding_assembly(self):
@@ -300,7 +324,6 @@ class Panel:
         self.context.set_dash([])
 
     def _draw_frame(self):
-
         if self.name == 'unit':
             return
 
@@ -435,8 +458,46 @@ class Panel:
                     self.context.stroke()
         else:
             self.context.rectangle(self.x, self.y, self.scaled_width, self.scaled_height)
+            self.context.stroke()
 
-        self.context.stroke()
+            if self.pull_handle_size and self.pull_handle_location:
+                self.context.set_line_width(3)
+                self.context.set_source_rgb(0.3, 0.3, 0.3)
+
+                if self.pull_handle_location == 'left':
+                    handle_x = self.x + 2 * self.scale_factor
+                    handle_y_start = self.y + 20 * self.scale_factor
+                    handle_y_end = (self.y + 20 + self.pull_handle_size) * self.scale_factor
+
+                    self.context.move_to(handle_x, handle_y_start)
+                    self.context.line_to(handle_x, handle_y_end)
+
+                    self.context.rectangle(handle_x, handle_y_start + 3.75 * self.scale_factor, 1.6 * self.scale_factor,
+                                           1.6 * self.scale_factor)
+
+                    self.context.rectangle(handle_x, handle_y_end - 5.35 * self.scale_factor, 1.6 * self.scale_factor,
+                                           1.6 * self.scale_factor)
+
+                elif self.pull_handle_location == 'right':
+                    handle_x = self.x + self.scaled_width - 2 * self.scale_factor
+                    handle_y_start = self.y + 20 * self.scale_factor
+                    handle_y_end = (self.y + 20 + self.pull_handle_size) * self.scale_factor
+
+                    self.context.move_to(handle_x, handle_y_start)
+                    self.context.line_to(handle_x, handle_y_end)
+
+                    self.context.rectangle(handle_x - 1.6 * self.scale_factor,
+                                           handle_y_start + 3.75 * self.scale_factor, 1.6 * self.scale_factor,
+                                           1.6 * self.scale_factor)
+
+                    self.context.rectangle(handle_x - 1.6 * self.scale_factor, handle_y_end - 5.35 * self.scale_factor,
+                                           1.6 * self.scale_factor,
+                                           1.6 * self.scale_factor)
+
+                self.context.stroke()
+                # reset thickness and color
+                self.context.set_line_width(1)
+                self.context.set_source_rgb(0, 0, 0)
 
         self.context.restore()
 

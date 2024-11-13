@@ -1,5 +1,4 @@
-from components.config import NUMBER_OF_TRACKS_PARAM_NAME, TRACK_NUMBER_PARAM_NAME, FRAME_CATEGORY_PARAM_NAME, \
-    POCKET_LOCATION_PARAM_NAME
+from components.config import *
 
 
 def get_dimensions_from_layers(layers):
@@ -56,57 +55,6 @@ def get_pocket_width(tree):
     return min_width
 
 
-def get_number_of_tracks_value_old(tree):
-    number_of_tracks = 0
-
-    def check_child(child):
-        nonlocal number_of_tracks
-        if child.get('panel_type') == 'frame':
-            # Iterate through parameters
-            for parameter in child.get('parameters', []):
-                # Check if parameter name is "number of tracks"
-                if parameter.get('name') == NUMBER_OF_TRACKS_PARAM_NAME:
-                    try:
-                        number_of_tracks = int(parameter.get('value_name', 0))
-                        return  # Exit the loop once the value is found
-                    except ValueError:
-                        # Ignore error
-                        pass
-        elif child.get('panel_type') in ['subunit', 'unit']:
-            # If the child is a subunit or unit, perform a recursive check
-            for sub_child in child.get('children', []):
-                check_child(sub_child)
-                if number_of_tracks:
-                    return
-
-    for child in tree.get('children', []):
-        check_child(child)
-        if number_of_tracks:
-            break
-
-    return number_of_tracks
-
-
-def get_number_of_tracks_value(tree):
-    val = get_frame_parameter_value(tree, NUMBER_OF_TRACKS_PARAM_NAME)
-    if not val:
-        return 0
-
-    return int(val)
-
-
-def get_frame_category(tree):
-    val = get_frame_parameter_value(tree, FRAME_CATEGORY_PARAM_NAME)
-
-    return val
-
-
-def get_pocket_location(tree):
-    val = get_frame_parameter_value(tree, POCKET_LOCATION_PARAM_NAME)
-
-    return val
-
-
 def get_frame_parameter_value(tree, parameter_name):
     parameter_value = None
 
@@ -137,6 +85,37 @@ def get_frame_parameter_value(tree, parameter_name):
 
     return parameter_value
 
+
+def get_number_of_tracks_value(tree):
+    val = get_frame_parameter_value(tree, NUMBER_OF_TRACKS_PARAM_NAME)
+    if not val:
+        return 0
+
+    return int(val)
+
+
+def get_frame_category(tree):
+    val = get_frame_parameter_value(tree, FRAME_CATEGORY_PARAM_NAME)
+
+    return val
+
+
+def get_pocket_location(tree):
+    val = get_frame_parameter_value(tree, POCKET_LOCATION_PARAM_NAME)
+
+    return val
+
+
+def get_pull_type(tree) -> str:
+    val = get_frame_parameter_value(tree, PULL_TYPE_PARAM_NAME)
+
+    return val
+
+
+def get_pull_handle_location(tree) -> str:
+    val = get_frame_parameter_value(tree, PULL_HANDLE_LOCATION_PARAM_NAME)
+
+    return val
 
 def get_track_number_of_panel(panel):
     for parameter in panel.get("parameters", []):

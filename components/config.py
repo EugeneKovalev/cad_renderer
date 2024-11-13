@@ -6,3 +6,7 @@ PANEL_DIRECTION_PARAM_NAME = "panel - movement direction"
 
 FRAME_CATEGORY_PARAM_NAME = "frame category"
 POCKET_LOCATION_PARAM_NAME = "pocket location"
+
+PULL_TYPE_PARAM_NAME = "pull type"
+PULL_HANDLE_LOCATION_PARAM_NAME = "pull handle location"
+

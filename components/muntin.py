@@ -1,4 +1,5 @@
 from components.muntin_label import MuntinLabel
+from components.utils import scale_point
 from enums.colors import Colors
 
 
@@ -121,8 +122,9 @@ class Muntin:
     def draw_muntin(self):
         muntin_parameters = self.panel_object.muntin_parameters
         context = self.panel_object.context
-
         context.save()
+
+        muntin_shape = self.panel_object.muntin_shape
 
         # calculate start x and y
         dlo_x_offset = (self.panel_object.scaled_width - self.panel_object.scaled_dlo_width) / 2
@@ -142,7 +144,34 @@ class Muntin:
         b_offset = 0.10 * dlo_width
 
         # start draw
-        if self.panel_object.muntin_parts:
+        if muntin_shape:
+            context.set_source_rgba(*Colors.BLACK)
+            context.set_line_width(0.5)
+
+            # Iterate over the sides and draw each line
+            for side in muntin_shape.get('sides', []):
+
+                segment = side.get('segment', {})
+
+                if not segment:
+                    continue
+
+                p1 = scale_point(segment['p1'], self.panel_object.scale_factor)
+                p2 = scale_point(segment['p2'], self.panel_object.scale_factor)
+                b1 = scale_point(segment['b1'], self.panel_object.scale_factor)
+                b2 = scale_point(segment['b2'], self.panel_object.scale_factor)
+
+                # Move to the start point
+                context.move_to(x + p1[0], y + p1[1])
+
+                # Draw the Bezier curve
+                context.curve_to(x + b1[0], y + b1[1], x + b2[0], y + b2[1],
+                                      x + p2[0], y + p2[1])
+                context.stroke()
+
+            return
+
+        elif self.panel_object.muntin_parts:
             # muntins from parts placements
             context.set_source_rgba(*Colors.BLACK)
             context.set_line_width(0.5)
@@ -162,7 +191,8 @@ class Muntin:
                 self.draw_muntin_labels(vertical_parts)
 
                 # horizontal parts
-                horizontal_parts = [part for part in self.panel_object.muntin_parts if part['orientation'] == 'horizontal']
+                horizontal_parts = [part for part in self.panel_object.muntin_parts if
+                                    part['orientation'] == 'horizontal']
 
                 # a part can be placed at multiple points, gather each placement and keep it in ascending order
                 horizontal_parts = self.__sort_muntin_parts(horizontal_parts)
@@ -259,7 +289,7 @@ class Muntin:
 
         for item in parts:
             position = item['placement_position'] if isinstance(item['placement_position'], (float, int)) else \
-            item['placement_position'][0]
+                item['placement_position'][0]
             if position not in unique_positions:
                 unique_positions.add(position)
                 unique_parts.append(item)

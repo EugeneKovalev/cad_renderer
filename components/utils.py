@@ -147,6 +147,20 @@ def get_panel_direction_from_tree(tree, panel_name):
     return None
 
 
+def get_panel_muntin_shape_from_tree(tree, panel_name):
+    for child in tree.get('children', []):
+        # Check if the child is a frame
+        if child.get('panel_type', '') == 'panel' and child.get('name') == panel_name:
+            return child.get('muntin_shape', {})
+        else:
+            for inner_child in tree.get('children', []):
+                shape = get_panel_muntin_shape_from_tree(inner_child, panel_name)
+                if shape is not None:
+                    return shape
+
+    return None
+
+
 def find_shape_max_min_differences(sides):
     max_x = float('-inf')
     max_y = float('-inf')

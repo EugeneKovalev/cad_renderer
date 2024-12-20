@@ -11,7 +11,7 @@ from components.helpers.bezier import offset_bezier_curve
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
 from components.top_view.utils import get_pull_type, get_pull_handle_location
-from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point
+from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point, get_panel_muntin_shape_from_tree
 from enums.colors import Colors
 
 
@@ -142,6 +142,13 @@ class Panel:
         except:
             # return empty list if there is any unexpected structure for shape
             return []
+
+    @property
+    def muntin_shape(self):
+        try:
+            return get_panel_muntin_shape_from_tree(self.constructor_data, self.name)
+        except Exception:
+            return None
 
     @property
     def draw_muntin_label(self):

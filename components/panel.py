@@ -471,10 +471,15 @@ class Panel:
                 self.context.set_line_width(3)
                 self.context.set_source_rgb(0.3, 0.3, 0.3)
 
+                # Calculate the vertical center of the panel
+                panel_center_y = self.y + self.scaled_height / 2
+
                 if self.pull_handle_location == 'left':
                     handle_x = self.x + 2 * self.scale_factor
-                    handle_y_start = self.y + 20 * self.scale_factor
-                    handle_y_end = (self.y + 20 + self.pull_handle_size) * self.scale_factor
+
+                    # Calculate handle_y_start to center the handle vertically
+                    handle_y_start = panel_center_y - (self.pull_handle_size / 2) * self.scale_factor
+                    handle_y_end = panel_center_y + (self.pull_handle_size / 2) * self.scale_factor
 
                     self.context.move_to(handle_x, handle_y_start)
                     self.context.line_to(handle_x, handle_y_end)
@@ -487,8 +492,10 @@ class Panel:
 
                 elif self.pull_handle_location == 'right':
                     handle_x = self.x + self.scaled_width - 2 * self.scale_factor
-                    handle_y_start = self.y + 20 * self.scale_factor
-                    handle_y_end = (self.y + 20 + self.pull_handle_size) * self.scale_factor
+
+                    # Calculate handle_y_start to center the handle vertically
+                    handle_y_start = panel_center_y - (self.pull_handle_size / 2) * self.scale_factor
+                    handle_y_end = panel_center_y + (self.pull_handle_size / 2) * self.scale_factor
 
                     self.context.move_to(handle_x, handle_y_start)
                     self.context.line_to(handle_x, handle_y_end)
@@ -505,7 +512,7 @@ class Panel:
                 # reset thickness and color
                 self.context.set_line_width(1)
                 self.context.set_source_rgb(0, 0, 0)
-
+            
         self.context.restore()
 
     def _draw_panel_dlo(self):

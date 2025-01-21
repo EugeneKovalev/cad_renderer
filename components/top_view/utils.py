@@ -59,37 +59,6 @@ def get_pocket_width(tree):
     return min_width
 
 
-def get_frame_parameter_value(tree, parameter_name):
-    parameter_value = None
-
-    def check_child(child):
-        nonlocal parameter_value
-        if child.get('panel_type') == 'frame':
-            # Iterate through parameters
-            for parameter in child.get('parameters', []):
-                # Check if parameter name is "number of tracks"
-                if parameter.get('name') == parameter_name:
-                    try:
-                        parameter_value = parameter.get('value_name', None)
-                        return  # Exit the loop once the value is found
-                    except ValueError:
-                        # Ignore error
-                        pass
-        elif child.get('panel_type') in ['subunit', 'unit']:
-            # If the child is a subunit or unit, perform a recursive check
-            for sub_child in child.get('children', []):
-                check_child(sub_child)
-                if parameter_value:
-                    return
-
-    for child in tree.get('children', []):
-        check_child(child)
-        if parameter_value:
-            break
-
-    return parameter_value
-
-
 def get_number_of_tracks_value(tree):
     val = get_frame_parameter_value(tree, NUMBER_OF_TRACKS_PARAM_NAME)
     if not val:

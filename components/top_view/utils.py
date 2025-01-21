@@ -112,17 +112,40 @@ def get_pull_type(tree) -> str:
     return val
 
 
-def get_pull_handle_location(tree) -> str:
-    val = get_frame_parameter_value(tree, PULL_HANDLE_LOCATION_PARAM_NAME)
-
-    return val
+def get_panel_parameter_value(panel, param_name):
+    """
+    Searches the panel's 'parameters' for the given param_name.
+    Returns the parameter's 'value_name' if found, otherwise None.
+    """
+    for parameter in panel.get("parameters", []):
+        if parameter.get("name").lower() == param_name.lower():
+            return parameter.get("value_name").lower()
+    return None
 
 def get_track_number_of_panel(panel):
-    for parameter in panel.get("parameters", []):
-        if parameter.get("name") == TRACK_NUMBER_PARAM_NAME:
-            try:
-                return int(parameter.get("value_name"))
-            except:
-                pass
-
+    """
+    Uses the helper get_panel_parameter_value to find the track_number parameter.
+    If it can be converted to int, returns it; otherwise defaults to 1.
+    """
+    value = get_panel_parameter_value(panel, TRACK_NUMBER_PARAM_NAME)
+    if value is not None:
+        try:
+            return int(value)
+        except ValueError:
+            pass
     return 1
+
+def get_pull_handle_location(tree, panel) -> str:
+    """
+    Looks for the pull handle location in the panel's parameters first.
+    If not found there, attempts to get it from the tree.
+    """
+    # Try the panel first
+    val = get_panel_parameter_value(panel, PULL_HANDLE_LOCATION_PARAM_NAME)
+    if val is not None:
+        return val
+
+    # Fallback to the frame parameters in the tree
+    val = get_frame_parameter_value(tree, PULL_HANDLE_LOCATION_PARAM_NAME)
+    return val
+

@@ -113,7 +113,7 @@ class Panel:
 
     @cached_property
     def pull_handle_location(self):
-        pull_handle_location = get_pull_handle_location(self.constructor_data)
+        pull_handle_location = get_pull_handle_location(self.constructor_data, self)
         if pull_handle_location:
             return pull_handle_location.lower()
         else:

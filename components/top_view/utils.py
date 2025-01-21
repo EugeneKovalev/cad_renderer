@@ -1,4 +1,8 @@
 from components.config import *
+import logging
+
+# Configure logging - you can adjust the level as needed
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def get_dimensions_from_layers(layers):
@@ -106,46 +110,111 @@ def get_pocket_location(tree):
     return val
 
 
-def get_pull_type(tree) -> str:
-    val = get_frame_parameter_value(tree, PULL_TYPE_PARAM_NAME)
+def get_frame_parameter_value(tree, param_name):
+    """
+    Recursively searches for a parameter within the tree.
+    """
+    logging.debug(f"get_frame_parameter_value called with tree: {tree}, param_name: {param_name}")
 
+    if isinstance(tree, dict):
+        if "parameters" in tree:
+            for parameter in tree["parameters"]:
+                if parameter.get("name", "").lower() == param_name.lower():
+                    value_name = parameter.get("value_name")
+                    logging.debug(f"Found value in tree parameters: {value_name}")
+                    return value_name
+
+        for key, value in tree.items():
+            if isinstance(value, (dict, list)):
+                result = get_frame_parameter_value(value, param_name)
+                if result:
+                    return result
+
+    elif isinstance(tree, list):
+        for item in tree:
+            result = get_frame_parameter_value(item, param_name)
+            if result:
+                return result
+
+    logging.debug(f"Value not found for {param_name}")
+    return None
+
+
+def get_pull_type(tree) -> str:
+    logging.debug(f"get_pull_type called with tree: {tree}")
+    val = get_frame_parameter_value(tree, PULL_TYPE_PARAM_NAME)
+    logging.debug(f"get_pull_type returning: {val}")
     return val
 
 
 def get_panel_parameter_value(panel, param_name):
     """
-    Searches the panel's 'parameters' for the given param_name.
+    Recursively searches the panel's 'parameters' and children for the given param_name.
     Returns the parameter's 'value_name' if found, otherwise None.
     """
-    for parameter in panel.raw_params.get("parameters", []):
-        if parameter.get("name").lower() == param_name.lower():
-            return parameter.get("value_name").lower()
+    logging.debug(f"get_panel_parameter_value called with panel: {panel}, param_name: {param_name}")
+
+    if isinstance(panel, dict):
+        if "parameters" in panel:
+            for parameter in panel.get("parameters", []):
+                logging.debug(f"  Checking parameter: {parameter.get('name')}")
+                if parameter.get("name", "").lower() == param_name.lower():
+                    value_name = parameter.get("value_name", "").lower()
+                    logging.debug(f"  Found matching parameter! value_name: {value_name}")
+                    return value_name
+
+        # Recursively check in children
+        if "children" in panel:
+            for child in panel.get("children", []):
+                result = get_panel_parameter_value(child, param_name)
+                if result:
+                    return result
+
+    elif isinstance(panel, list):
+        for item in panel:
+            result = get_panel_parameter_value(item, param_name)
+            if result:
+                return result
+
+    logging.debug(f"  No matching parameter found for {param_name} in panel.")
     return None
+
 
 def get_track_number_of_panel(panel):
     """
     Uses the helper get_panel_parameter_value to find the track_number parameter.
     If it can be converted to int, returns it; otherwise defaults to 1.
     """
+    logging.debug(f"get_track_number_of_panel called with panel: {panel}")
     value = get_panel_parameter_value(panel, TRACK_NUMBER_PARAM_NAME)
     if value is not None:
+        logging.debug(f"  Found track_number value: {value}")
         try:
-            return int(value)
+            int_value = int(value)
+            logging.debug(f"  Successfully converted to int: {int_value}")
+            return int_value
         except ValueError:
+            logging.debug(f"  Could not convert '{value}' to int. Returning default value 1.")
             pass
+    else:
+        logging.debug(f"  track_number parameter not found. Returning default value 1.")
     return 1
+
 
 def get_pull_handle_location(tree, panel) -> str:
     """
     Looks for the pull handle location in the panel's parameters first.
     If not found there, attempts to get it from the tree.
     """
+    logging.debug(f"get_pull_handle_location called with tree: {tree}, panel: {panel}")
     # Try the panel first
     val = get_panel_parameter_value(panel, PULL_HANDLE_LOCATION_PARAM_NAME)
     if val is not None:
+        logging.debug(f"  Found pull_handle_location in panel parameters: {val}")
         return val
 
     # Fallback to the frame parameters in the tree
+    logging.debug("  pull_handle_location not found in panel, checking tree...")
     val = get_frame_parameter_value(tree, PULL_HANDLE_LOCATION_PARAM_NAME)
+    logging.debug(f"get_pull_handle_location returning from tree: {val}")
     return val
-

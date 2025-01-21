@@ -117,7 +117,7 @@ def get_panel_parameter_value(panel, param_name):
     Searches the panel's 'parameters' for the given param_name.
     Returns the parameter's 'value_name' if found, otherwise None.
     """
-    for parameter in panel.get("parameters", []):
+    for parameter in panel.raw_params.get("parameters", []):
         if parameter.get("name").lower() == param_name.lower():
             return parameter.get("value_name").lower()
     return None

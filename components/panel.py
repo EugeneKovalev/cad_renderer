@@ -121,13 +121,19 @@ class Panel:
 
     @property
     def is_sliding_assembly(self):
-        assembly_version = self.constructor_data.get('assembly_version', {})
-        product_category_id = assembly_version.get('product_category_id')
+        def find_product_category_id(node):
+            av = node.get("assembly_version") or {}
+            product_category_id = av.get("product_category_id")
+            if product_category_id:
+                return product_category_id
+            for child in node.get("children", []):
+                result = find_product_category_id(child)
+                if result:
+                    return result
+            return None
 
-        if product_category_id == SLIDING_DOOR_PRODUCT_CATEGORY_ID:
-            return True
-        else:
-            return False
+        product_category_id = find_product_category_id(self.constructor_data)
+        return product_category_id == SLIDING_DOOR_PRODUCT_CATEGORY_ID
 
     @property
     def muntin_parts(self):

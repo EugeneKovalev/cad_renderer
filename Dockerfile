@@ -12,3 +12,8 @@ RUN pip install --no-cache-dir -r /var/tmp/requirements.txt
 
 WORKDIR /app
 
+# ✅ This copies all your app code (including run.py) into /app
+COPY . .
+
+# Optional but recommended: set the default command
+CMD ["python", "run.py"]

@@ -10,7 +10,7 @@ from components.helpers.arrow import Arrow
 from components.helpers.bezier import offset_bezier_curve
 from components.helpers.direction_angle import DirectionAngle
 from components.muntin import Muntin
-from components.top_view.utils import get_pull_type, get_pull_handle_location
+from components.top_view.utils import get_pull_type, get_pull_handle_location, find_unit_subtree_for_panel
 from components.utils import get_panel_direction_from_tree, find_shape_max_min_differences, scale_point, get_panel_muntin_shape_from_tree
 from enums.colors import Colors
 
@@ -99,7 +99,8 @@ class Panel:
 
     @cached_property
     def pull_handle_size(self):
-        pull_type = get_pull_type(self.constructor_data)
+        unit_tree = find_unit_subtree_for_panel(self.constructor_data, self.name)
+        pull_type = get_pull_type(unit_tree)
         if not pull_type:
             return ''
         elif pull_type.endswith('24"'):
@@ -113,7 +114,8 @@ class Panel:
 
     @cached_property
     def pull_handle_location(self):
-        pull_handle_location = get_pull_handle_location(self.constructor_data, self)
+        unit_tree = find_unit_subtree_for_panel(self.constructor_data, self.name)
+        pull_handle_location = get_pull_handle_location(unit_tree, self)
         if pull_handle_location:
             return pull_handle_location.lower()
         else:

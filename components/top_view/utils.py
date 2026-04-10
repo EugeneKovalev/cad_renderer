@@ -109,6 +109,29 @@ def get_frame_parameter_value(tree, param_name):
     return None
 
 
+def find_unit_subtree_for_panel(tree, panel_name):
+    """
+    Find the unit/subunit subtree in constructor_data that contains
+    a panel with the given name. Prevents handle parameters from
+    one unit leaking into adjacent units in a multiunit.
+    """
+    def contains_panel(node, name):
+        if node.get('name') == name:
+            return True
+        for child in node.get('children', []):
+            if contains_panel(child, name):
+                return True
+        return False
+
+    for child in tree.get('children', []):
+        panel_type = child.get('panel_type', '')
+        if panel_type in ('unit', 'subunit'):
+            if contains_panel(child, panel_name):
+                return child
+
+    return tree
+
+
 def get_pull_type(tree) -> str:
     logging.debug(f"get_pull_type called with tree: {tree}")
     val = get_frame_parameter_value(tree, PULL_TYPE_PARAM_NAME)
